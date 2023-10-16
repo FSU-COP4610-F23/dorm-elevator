@@ -1,0 +1,1 @@
+cmd_/home/masopeh/Downloads/elevator/part2/my_timer.ko := ld -r -m elf_x86_64 -z noexecstack --build-id=sha1  -T scripts/module.lds -o /home/masopeh/Downloads/elevator/part2/my_timer.ko /home/masopeh/Downloads/elevator/part2/my_timer.o /home/masopeh/Downloads/elevator/part2/my_timer.mod.o;  true

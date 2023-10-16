@@ -1,0 +1,1 @@
+cmd_/home/masopeh/Downloads/elevator/part2/my_timer.mod := printf '%s\n'   my_timer.o | awk '!x[$$0]++ { print("/home/masopeh/Downloads/elevator/part2/"$$0) }' > /home/masopeh/Downloads/elevator/part2/my_timer.mod

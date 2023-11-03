@@ -27,9 +27,8 @@ static char *message;
 
 static int elevator_state = OFFLINE;
 static int current_floor = 1;
-static int num_passengers = 0;
-static int elevator_weight = 0;
 static int passengers_serviced = 0;
+static int floor_count = 0; //for all floors total
 static int read_p;
 
 
@@ -49,11 +48,11 @@ static int read_p;
 
 
 
-struct { //linked list of passengers on elevator & total weight and count
+struct Elevator{ //linked list of passengers on elevator & total weight and count
 	int total_cnt;
 	int total_weight;
 	struct list_head list;
-} passengers;
+} ;
 
 
 
@@ -65,10 +64,11 @@ typedef struct passenger { //information of each passenger
 } Passenger; //Passenger can be used as nickname
 
 Passenger f1, f2, f3, f4, f5, f6; //one for each floor
+Elevator elevator;
 
 /********************************************************************/
 
-int issue_request(int start, int dest, int type) { //adds passengers
+int issue_request(int start, int dest, int type) { //adds passengers to floors
 	//create lock here????
 	int weight;
 	char id[2] = ""; //id is placeholder for p->id before it has memory allocated
@@ -126,7 +126,7 @@ int issue_request(int start, int dest, int type) { //adds passengers
 		default:
 			return 1; //returns 1 if invalid
 	}
-
+	floor_count++;
 	//lock release here????
 	return 0; //success
 /*
@@ -140,98 +140,205 @@ int issue_request(int start, int dest, int type) { //adds passengers
 	Passenger *last_element = list_last_entry(&Passenger.list, Passenger, list);
 	list_del(&last_element->list);//removes   passenger from floor waiting list
 	passengers.total_cnt += 1;
-	passengers.total_weight += weight;
-*/	
+	passengers.total_weight += weight;*/
 }
 
-int
-
-int print_passengers(void) {
-	int i;
-	Passenger *p;
+int addToElevator(int currentFloor) { //loads to elevator
+	Passenger * p;
 	struct list_head *temp;
+	struct list_head *tempSafe;
 
+	switch(currentFloor) {
+		case 1:
+			list_for_each_safe(temp, tempSafe, &f1.list) { //use safe version because we will be deleting in iterations
+				p = list_entry(temp, Passenger, list);
+				if (elevator.total_weight + p->weight <= 750 && elevator.total_cnt < 5)	{
+					list_add_tail(&p->list, &elevator.list);
+					elevator.total_weight += p->weight;
+					elevator.total_cnt++;
+					floor_count--;
+					list_del(temp); //remove current passenger (pointed by temp) from floor list
+				}
+			}
+			break;
+		case 2:
+			list_for_each_safe(temp, tempSafe, &f2.list) { /* forwards*/
+				p = list_entry(temp, Passenger, list);
+				if (elevator.total_weight + p->weight <= 750 && elevator.total_cnt < 5)	{
+					list_add_tail(&p->list, &elevator.list);
+					elevator.total_weight += p->weight;
+					elevator.total_cnt++;
+					floor_count--;
+					list_del(temp);
+				}
+			}
+			break;
+		case 3:
+			list_for_each_safe(temp, tempSafe, &f3.list) { /* forwards*/
+				p = list_entry(temp, Passenger, list);
+				if (elevator.total_weight + p->weight <= 750 && elevator.total_cnt < 5)	{
+					list_add_tail(&p->list, &elevator.list);
+					elevator.total_weight += p->weight;
+					elevator.total_cnt++;
+					floor_count--;
+					list_del(temp);
+				}
+			}
+			break;
+		case 4:
+			list_for_each_safe(temp, tempSafe, &f4.list) { /* forwards*/
+				p = list_entry(temp, Passenger, list);
+				if (elevator.total_weight + p->weight <= 750 && elevator.total_cnt < 5)	{
+					list_add_tail(&p->list, &elevator.list);
+					elevator.total_weight += p->weight;
+					elevator.total_cnt++;
+					floor_count--;
+					list_del(temp);
+				}
+			}
+			break;
+		case 5:
+			list_for_each_safe(temp, tempSafe, &f5.list) { /* forwards*/
+				p = list_entry(temp, Passenger, list);
+				if (elevator.total_weight + p->weight <= 750 && elevator.total_cnt < 5)	{
+					list_add_tail(&p->list, &elevator.list);
+					elevator.total_weight += p->weight;
+					elevator.total_cnt++;
+					floor_count--;
+					list_del(temp);
+				}
+			}
+			break;
+		case 6:
+			list_for_each_safe(temp, tempSafe, &f6.list) { /* forwards*/
+				p = list_entry(temp, Passenger, list);
+				if (elevator.total_weight + p->weight <= 750 && elevator.total_cnt < 5)	{
+					list_add_tail(&p->list, &elevator.list);
+					elevator.total_weight += p->weight;
+					elevator.total_cnt++;
+					floor_count--;
+					list_del(temp);
+				}
+			}
+			break;
+	}
+	return 0;
+}
+
+int removeFromElevator() { //unloads from elevator from current floor USED BY KTHREAD MOVEMENT MAYBE???
+	Passenger * checkFirst; //unloads the person who was in the elevator the longest
+	Passenger * p;
+	struct list_head *elevatorPtr = &elevator.list;
+	struct list_head *safePtr;
+
+	if (!list_empty(elevatorPtr))  //if elevator isn't empty (statement might not be necessary)
+ 		checkFirst = list_first_entry(elevatorPtr, Passenger, list);
+	else
+		return 1; //error can't remove bc empty
+
+	//if current floor is proper destination for first passenger, unload each passenger with same destination
+	if (checkFirst->destination == current_floor) {
+		list_for_each_safe(elevatorPtr, safePtr, &elevator.list) {
+			p = list_entry(elevatorPtr, Passenger, list);
+			if (p->destination == current_floor) {
+				list_del(elevatorPtr); //remove current entry of elevator from list
+				kfree(p); //deallocate memory tied to p as it's no longer needed once unloaded
+			}
+		}
+	}
+	else
+		return -1; //error not correct floor (can be used by kthread to check when to stop moving)
+
+	return 0; //successful unloading
+
+}
+
+int printElevator() {
+	Passenger * p;
+	struct list_head *temp;
 	char *buf = kmalloc(sizeof(char) * 100, __GFP_RECLAIM);
-	if (buf == NULL) {
-		printk(KERN_WARNING "print_passengers");
-		return -ENOMEM;
-	}
 
-	/* init message buffer */
-	strcpy(message, "");
-
-	/* headers, print to temporary then append to message buffer */
-	sprintf(buf, "Total count is: %d\n", passengers.total_cnt);       strcat(message, buf);
-	sprintf(buf, "Total weight is: %d\n", passengers.total_weight);   strcat(message, buf);
-	sprintf(buf, "Passengers seen:\n");                               strcat(message, buf);
-
-	/* print entries */
-	i = 0;
-	//list_for_each_prev(temp, &animals.list) { /* backwards */
-	list_for_each(temp, &passengers.list) { /* forwards*/
+	list_for_each(temp, &elevator.list) {
 		p = list_entry(temp, Passenger, list);
-
-		/* newline after every 5 entries */
-		if (i % 5 == 0 && i > 0)
-			strcat(message, "\n");
-
-		sprintf(buf, "%s ", p->name);
+		sprintf(buf, "%s ", p->id);
 		strcat(message, buf);
-
-		i++;
 	}
-
-	/* trailing newline to separate file from commands */
 	strcat(message, "\n");
-
 	kfree(buf);
 	return 0;
 }
 
-void delete_passengers(int type) {
-	struct list_head move_list;
-	struct list_head *temp;
-	struct list_head *dummy;
-	int i;
+int printFloorList(int floorNum) {
 	Passenger *p;
+	struct list_head *temp;
 
-	INIT_LIST_HEAD(&move_list);
-
-	/* move items to a temporary list to illustrate movement */
-	//list_for_each_prev_safe(temp, dummy, &animals.list) { /* backwards */
-	list_for_each_safe(temp, dummy, &passengers.list) { /* forwards */
-		p = list_entry(temp, Passenger, list);
-
-		if (p->id == type) {
-			//list_move(temp, &move_list); /* move to front of list */
-			list_move_tail(temp, &move_list); /* move to back of list */
-		}
-
+	char *buf = kmalloc(sizeof(char) * 100, __GFP_RECLAIM); //100 char should be enough for each floor
+	if (buf == NULL) {
+		printk(KERN_WARNING "print_wait_floor");
+		return -ENOMEM;
 	}
 
-	/* print stats of list to syslog, entry version just as example (not needed here) */
-	i = 0;
-	//list_for_each_entry_reverse(a, &move_list, list) { /* backwards */
-	list_for_each_entry(p, &move_list, list) { /* forwards */
-		/* can access a directly e.g. a->id */
-		i++;
+	switch(floorNum) {
+		case 1:
+			list_for_each(temp, &f1.list) { /* forwards*/
+				p = list_entry(temp, Passenger, list);
+				sprintf(buf, "%s ", p->id);
+				strcat(message, buf);
+				floor_count++; //adds 1 to floor count
+			}
+			break;
+		case 2:
+			list_for_each(temp, &f2.list) { /* forwards*/
+				p = list_entry(temp, Passenger, list);
+				sprintf(buf, "%s ", p->id);
+				strcat(message, buf);
+				floor_count++; //adds 1 to floor count
+			}
+			break;
+		case 3:
+			list_for_each(temp, &f3.list) { /* forwards*/
+				p = list_entry(temp, Passenger, list);
+				sprintf(buf, "%s ", p->id);
+				strcat(message, buf);
+				floor_count++; //adds 1 to floor count
+			}
+			break;
+		case 4:
+			list_for_each(temp, &f4.list) { /* forwards*/
+				p = list_entry(temp, Passenger, list);
+				sprintf(buf, "%s ", p->id);
+				strcat(message, buf);
+				floor_count++; //adds 1 to floor count
+			}
+			break;
+		case 5:
+			list_for_each(temp, &f5.list) { /* forwards*/
+				p = list_entry(temp, Passenger, list);
+				sprintf(buf, "%s ", p->id);
+				strcat(message, buf);
+				floor_count++; //adds 1 to floor count
+			}
+			break;
+		case 6:
+			list_for_each(temp, &f6.list) { /* forwards*/
+				p = list_entry(temp, Passenger, list);
+				sprintf(buf, "%s ", p->id);
+				strcat(message, buf);
+				floor_count++; //adds 1 to floor count
+			}
+			break;
 	}
-	printk(KERN_NOTICE "Passenger type %d had %d entries\n", type, i);
 
-	/* free up memory allocation of Passengers */
-	//list_for_each_prev_safe(temp, dummy, &move_list) { /* backwards */
-	list_for_each_safe(temp, dummy, &move_list) { /* forwards */
-		p = list_entry(temp, Passenger, list);
-		list_del(temp);	/* removes entry from list */
-		kfree(p);
-	}
+	strcat(message, "\n");
+	kfree(buf);
+	return 0;
 }
+
 
 /********************************************************************/
 
 
-
-int passenger_proc_open(struct inode *sp_inode, struct file *sp_file) {
+int elevator_proc_open(struct inode *sp_inode, struct file *sp_file) {
 	read_p = 1;
 	message = kmalloc(sizeof(char) * ENTRY_SIZE, __GFP_RECLAIM | __GFP_IO | __GFP_FS); //allocates 1000 bytes to message
 	if (message == NULL) {
@@ -242,37 +349,58 @@ int passenger_proc_open(struct inode *sp_inode, struct file *sp_file) {
 	return 0;
 }
 
-//triggers every read (think this is part of step 5 maybe??)
+//triggers every read (every second with -n1 command)
 ssize_t elevator_proc_read(struct file *sp_file, char __user *buf, size_t size, loff_t *offset) {
 
 	read_p = !read_p; //idk what this does
 	if (read_p)
 		return 0;
-	
+
+	//idk how kthreads for movement work but maybe they are called here vvv every read?
+		
+	//call function that updates state
+	//call function that moves elevator to next dest
+	//drop off corresponding passengers to that floor
+	int addToElevator(current_floor); //while on that floor, add any customers to elevator
+
+
+
+
+
+	/*****once elevator moves and loads for 1 cycle print all this stuff out*****/
+
 	strcpy(message, "Elevator state: "); //start message to print to procfile
 
 	switch(elevator_state) {
 		case OFFLINE:
-		strcat(message, "OFFLINE"); //adds to message
-		break;
+			strcat(message, "OFFLINE"); //adds to message
+			break;
 		case IDLE:
-		strcat(message, "IDLE");
-		break;
+			strcat(message, "IDLE");
+			break;
 		case LOADING:
-		strcat(message, "LOADING");
-		break;
+			strcat(message, "LOADING");
+			break;
 		case UP:
-		strcat(message, "UP");
-		break;
+			strcat(message, "UP");
+			break;
 		case DOWN:
-		strcat(message, "DOWN");
-		break;
+			strcat(message, "DOWN");
+			break;
 	}
-
 	strcat(message, "\n");
+
 	strcat(message, "Current floor: ");
+	strcat(message, current_floor);
+	strcat(message, "\n");
+
 	strcat(message, "Current load: ");
+	strcat(message, elevator_weight);
+	strcat(message, " lbs");
+	strcat(message, "\n");
+
 	strcat(message, "Elevator status: ");
+	printElevator();
 
 	if(current_floor == 6)
 		strcat(message, "[*] Floor 6: ");
@@ -315,15 +443,15 @@ ssize_t elevator_proc_read(struct file *sp_file, char __user *buf, size_t size, 
 	
 
 	strcat(message, "Number of passengers: ");
-	sprintf(num_passengers, "%d", elevatorCount(); //prints %d into num_passengers
-	strcat(message, num_passengers);
+	//sprintf(num_passengers, "%d", elevatorCount(); //prints %d into num_passengers
+	strcat(message, elevator.total_cnt); //might be able to just do this and ignore prev line
 	
 	strcat(message, "Number of passengers waiting: ");
-	sprintf(floor_count, "%d", FloorCountTotal();
+	//sprintf(floor_count, "%d", FloorCountTotal();
 	strcat(message, floor_count);
 
 	strcat(message, "Number of passengers serviced: ");
-	sprintf(passengers_serviced, "%d", passengersServiced();
+	//sprintf(passengers_serviced, "%d", passengersServiced();
 	strcat(message, passengers_serviced);
 
 
@@ -335,7 +463,6 @@ ssize_t elevator_proc_read(struct file *sp_file, char __user *buf, size_t size, 
 
 int elevator_proc_release(struct inode *sp_inode, struct file *sp_file) {
 	kfree(message);
-
 	return 0;
 }
 
@@ -356,10 +483,10 @@ static int elevator_init(void) {
     STUB_issue_request = issue_request;
     STUB_stop_elevator = stop_elevator;
 
-	passengers.total_cnt = 0;
-	passengers.total_weight = 0;
+	elevator.total_cnt = 0;
+	elevator.total_weight = 0;
 
-	INIT_LIST_HEAD(&passengers.list);
+	INIT_LIST_HEAD(&elevator.list);
 	INIT_LIST_HEAD(&f1.list);
 	INIT_LIST_HEAD(&f2.list);
 	INIT_LIST_HEAD(&f3.list);

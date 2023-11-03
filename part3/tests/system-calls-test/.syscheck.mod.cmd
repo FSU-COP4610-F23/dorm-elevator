@@ -1,0 +1,1 @@
+savedcmd_/home/masopeh/Downloads/elevator/part3/tests/system-calls-test/syscheck.mod := printf '%s\n'   syscheck.o | awk '!x[$$0]++ { print("/home/masopeh/Downloads/elevator/part3/tests/system-calls-test/"$$0) }' > /home/masopeh/Downloads/elevator/part3/tests/system-calls-test/syscheck.mod

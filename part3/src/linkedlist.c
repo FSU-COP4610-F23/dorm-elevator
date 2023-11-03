@@ -238,6 +238,7 @@ int removeFromElevator() { //unloads from elevator from current floor USED BY KT
 
 	//if current floor is proper destination for first passenger, unload each passenger with same destination
 	if (checkFirst->destination == current_floor) {
+		//RIGHT HERE SHOULD BE SLEEP(2) FOR LOADING AND UNLOADING BUT IDK IF KTHREAD ALREADY IMPLEMENTS SLEEP IN ITS OWN WAY*********************
 		list_for_each_safe(elevatorPtr, safePtr, &elevator.list) {
 			p = list_entry(elevatorPtr, Passenger, list);
 			if (p->destination == current_floor) {
@@ -356,8 +357,7 @@ ssize_t elevator_proc_read(struct file *sp_file, char __user *buf, size_t size, 
 	if (read_p)
 		return 0;
 
-	//idk how kthreads for movement work but maybe they are called here vvv every read?
-		
+	//*****************************idk how kthreads for movement work but maybe they are called here every read? *******************************//
 	//call function that updates state
 	//call function that moves elevator to next dest
 	//drop off corresponding passengers to that floor

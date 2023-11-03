@@ -1,1 +1,0 @@
-savedcmd_/home/masopeh/Downloads/elevator/part3/tests/system-calls-test/modules.order := {   echo /home/masopeh/Downloads/elevator/part3/tests/system-calls-test/syscheck.o; :; } > /home/masopeh/Downloads/elevator/part3/tests/system-calls-test/modules.order

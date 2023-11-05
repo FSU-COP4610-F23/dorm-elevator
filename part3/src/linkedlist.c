@@ -24,7 +24,6 @@ extern int (*STUB_stop_elevator)(void);
 
 static char *message;
 
-
 static int elevator_state = OFFLINE;
 static int current_floor = 1;
 static int passengers_serviced = 0;

@@ -1001,3 +1001,5 @@ deps_/home/masopeh/project-2/elevator/part3/src/elevator.o := \
 $(deps_/home/masopeh/project-2/elevator/part3/src/elevator.o):
 
 /home/masopeh/project-2/elevator/part3/src/elevator.o: $(wildcard ./tools/objtool/objtool)
+#SYMVER FloorCountTotal 0x7eb86042
+#SYMVER passengersServiced 0xe1e108c7

@@ -4,6 +4,7 @@ source_/home/masopeh/project-2/elevator/part3/src/elevator.mod.o := /home/masope
 
 deps_/home/masopeh/project-2/elevator/part3/src/elevator.mod.o := \
     $(wildcard include/config/UNWINDER_ORC) \
+    $(wildcard include/config/MODULE_UNLOAD) \
     $(wildcard include/config/RETPOLINE) \
   include/linux/compiler-version.h \
     $(wildcard include/config/CC_VERSION_TEXT) \
@@ -46,7 +47,6 @@ deps_/home/masopeh/project-2/elevator/part3/src/elevator.mod.o := \
     $(wildcard include/config/HAVE_STATIC_CALL_INLINE) \
     $(wildcard include/config/KUNIT) \
     $(wildcard include/config/PRINTK_INDEX) \
-    $(wildcard include/config/MODULE_UNLOAD) \
     $(wildcard include/config/CONSTRUCTORS) \
     $(wildcard include/config/FUNCTION_ERROR_INJECTION) \
     $(wildcard include/config/DYNAMIC_DEBUG_CORE) \

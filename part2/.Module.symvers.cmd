@@ -1,0 +1,1 @@
+savedcmd_/home/masopeh/project-2/elevator/part2/Module.symvers :=  scripts/mod/modpost -m -a      -o /home/masopeh/project-2/elevator/part2/Module.symvers -T /home/masopeh/project-2/elevator/part2/modules.order -i Module.symvers -e 

@@ -803,6 +803,8 @@ int elevator_proc_release(struct inode *sp_inode, struct file *sp_file)
 
 static int __init elevator_init(void)
 {
+    printk(KERN_INFO "Elevator module is being loaded\n");
+
     fops.proc_open = elevator_proc_open;
     fops.proc_read = elevator_proc_read;
     fops.proc_release = elevator_proc_release;
@@ -838,6 +840,8 @@ static int __init elevator_init(void)
     {
         INIT_LIST_HEAD(&floor_lists[i]);
     }
+
+    printk(KERN_INFO "Elevator module initialization completed\n");
     return 0;
 }
 

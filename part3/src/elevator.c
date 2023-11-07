@@ -7,6 +7,7 @@
 #include <linux/random.h>
 #include <linux/list.h>
 #include <linux/delay.h>
+#include <linux/random.h>
 #include <linux/kthread.h> // Added for kthread_should_stop
 
 MODULE_LICENSE("GPL");
@@ -46,6 +47,11 @@ static int current_floor = 1;
 static int elevator_weight = 0;
 static int passengers_serviced = 0;
 static int read_p;
+
+// int generatr_random(int, int);
+// int generate_random_start_floor();
+// int generate_random_passenger_type();
+// int generate_random_destination_floor();
 
 // Define passenger types
 #define FRESHMAN 0
@@ -688,106 +694,6 @@ int elevator_proc_open(struct inode *sp_inode, struct file *sp_file)
     return 0;
 }
 
-// ssize_t elevator_proc_read(struct file *sp_file, char __user *buf, size_t size, loff_t *offset)
-// {
-//     char temp[PROC_BUF_SIZE];
-//     int len;
-
-//     if (*offset > 0)
-//         return 0;
-
-//     // Clear the temporary buffer
-//     memset(temp, 0, sizeof(temp));
-
-//     // Construct the content for the /proc/elevator entry
-//     snprintf(temp, sizeof(temp), "Elevator state: ");
-//     switch (elevator_state)
-//     {
-//     case OFFLINE:
-//         strcat(temp, "OFFLINE");
-//         break;
-//     case IDLE:
-//         strcat(temp, "IDLE");
-//         break;
-//     case LOADING:
-//         strcat(temp, "LOADING");
-//         break;
-//     case UP:
-//         strcat(temp, "UP");
-//         break;
-//     case DOWN:
-//         strcat(temp, "DOWN");
-//         break;
-//     default:
-//         strcat(temp, "UNKNOWN");
-//         break;
-//     }
-//     strcat(temp, "\n");
-
-//     snprintf(temp + strlen(temp), sizeof(temp) - strlen(temp), "Current floor: %d\n", current_floor);
-//     snprintf(temp + strlen(temp), sizeof(temp) - strlen(temp), "Current load: %d lbs\n", elevator_weight);
-
-//     // Add information about passengers in the elevator
-//     snprintf(temp + strlen(temp), sizeof(temp) - strlen(temp), "Elevator status:\n");
-//     // Replace "print_passengers();" with your logic to generate the elevator status message
-//     // strcat(temp, message); // Copy the previously generated elevator status message
-
-//     // Add information about passengers waiting on each floor
-//     for (int floor = 1; floor <= 6; floor++)
-//     {
-//         snprintf(temp + strlen(temp), sizeof(temp) - strlen(temp), "[%c] Floor %d: %d",
-//                  (current_floor == floor) ? '*' : ' ', floor, floor_count[floor - 1]);
-
-//         // Add information about waiting passengers on this floor
-//         struct list_head *pos;
-//         Passenger *p;
-//         list_for_each(pos, &floor_lists[floor - 1])
-//         {
-//             p = list_entry(pos, Passenger, list);
-//             char passenger_type;
-//             switch (p->type)
-//             {
-//             case 'F':
-//                 passenger_type = 'F';
-//                 break;
-//             case 'O':
-//                 passenger_type = 'O';
-//                 break;
-//             case 'J':
-//                 passenger_type = 'J';
-//                 break;
-//             case 'S':
-//                 passenger_type = 'S';
-//                 break;
-//             default:
-//                 passenger_type = 'U'; // Handle the case of an unknown type
-//             }
-//             snprintf(temp + strlen(temp), sizeof(temp) - strlen(temp), " %c%d", passenger_type, p->destination);
-//         }
-//         strcat(temp, "\n");
-//     }
-
-//     // Add the total number of passengers and passengers serviced
-//     snprintf(temp + strlen(temp), sizeof(temp) - strlen(temp), "Number of passengers: %d\n", elevatorCount());
-//     snprintf(temp + strlen(temp), sizeof(temp) - strlen(temp), "Number of passengers waiting: %d\n", FloorCountTotal());
-//     snprintf(temp + strlen(temp), sizeof(temp) - strlen(temp), "Number of passengers serviced: %d\n", passengersServiced());
-
-//     size = (size_t)min(size, (size_t)PROC_BUF_SIZE);
-
-//     len = strlen(temp);
-
-//     if (len <= *offset)
-//         return 0;
-
-//     // Copy the content to the user buffer
-//     if (copy_to_user(buf, temp + *offset, (size_t)min((size_t)(len - *offset), size)) != 0)
-//         return -EFAULT;
-
-//     *offset += (loff_t)min((size_t)(len - *offset), size);
-
-//     return (size_t)min((size_t)(len - *offset), size);
-// }
-
 static ssize_t elevator_proc_read(struct file *file, char __user *ubuf, size_t count, loff_t *ppos)
 {
     char buf[10000];
@@ -795,39 +701,40 @@ static ssize_t elevator_proc_read(struct file *file, char __user *ubuf, size_t c
 
     // Include the actual elevator state, current floor, current load, and elevator status
     len = sprintf(buf, "Elevator state: ");
-    switch (elevator_state) {
-        case OFFLINE:
-            len += sprintf(buf + len, "OFFLINE\n");
-            break;
-        case IDLE:
-            len += sprintf(buf + len, "IDLE\n");
-            break;
-        case LOADING:
-            len += sprintf(buf + len, "LOADING\n");
-            break;
-        case UP:
-            len += sprintf(buf + len, "UP\n");
-            break;
-        case DOWN:
-            len += sprintf(buf + len, "DOWN\n");
-            break;
-        default:
-            len += sprintf(buf + len, "UNKNOWN\n");
-            break;
+    switch (elevator_state)
+    {
+    case OFFLINE:
+        len += sprintf(buf + len, "OFFLINE\n");
+        break;
+    case IDLE:
+        len += sprintf(buf + len, "IDLE\n");
+        break;
+    case LOADING:
+        len += sprintf(buf + len, "LOADING\n");
+        break;
+    case UP:
+        len += sprintf(buf + len, "UP\n");
+        break;
+    case DOWN:
+        len += sprintf(buf + len, "DOWN\n");
+        break;
+    default:
+        len += sprintf(buf + len, "UNKNOWN\n");
+        break;
     }
 
     len += sprintf(buf + len, "Current floor: %d\n", current_floor);
     len += sprintf(buf + len, "Current load: %d lbs\n", elevator_weight);
-    
-    len += sprintf(buf + len, "Elevator status:\n");
 
     // Include information about passengers in the elevator
     struct list_head *pos;
     Passenger *p;
     int i = 0;
-    list_for_each(pos, &elevator.list) {
+    list_for_each(pos, &elevator.list)
+    {
         p = list_entry(pos, Passenger, list);
-        if (i % 5 == 0 && i > 0) {
+        if (i % 5 == 0 && i > 0)
+        {
             len += sprintf(buf + len, "\n");
         }
         len += sprintf(buf + len, "%s%d ", p->id, p->destination);
@@ -835,15 +742,17 @@ static ssize_t elevator_proc_read(struct file *file, char __user *ubuf, size_t c
     }
     len += sprintf(buf + len, "\n");
 
-    // Include information about passengers waiting on each floor
-    for (int floor = 1; floor <= 6; floor++) {
+    // Include information about passengers waiting on each floor in reverse order
+    for (int floor = 6; floor >= 1; floor--)
+    {
         len += sprintf(buf + len, "[%c] Floor %d: %d",
-                      (current_floor == floor) ? '*' : ' ', floor, floor_count[floor - 1]);
+                       (current_floor == floor) ? '*' : ' ', floor, floor_count[floor - 1]);
 
         struct list_head *floor_pos;
         Passenger *floor_passenger;
-        list_for_each(pos, &floor_lists[floor - 1]) {
-            floor_passenger = list_entry(floor_pos, Passenger, list);
+        list_for_each(pos, &floor_lists[floor - 1])
+        {
+            floor_passenger = list_entry(pos, Passenger, list);
             len += sprintf(buf + len, " %c%d", floor_passenger->id[0], floor_passenger->destination);
         }
         len += sprintf(buf + len, "\n");
@@ -856,7 +765,6 @@ static ssize_t elevator_proc_read(struct file *file, char __user *ubuf, size_t c
 
     return simple_read_from_buffer(ubuf, count, ppos, buf, len);
 }
-
 
 int elevator_proc_release(struct inode *sp_inode, struct file *sp_file)
 {

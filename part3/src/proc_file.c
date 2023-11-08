@@ -1,6 +1,7 @@
 // # include "elevator.h"
 // # include "elevator.c"
 
+
 int elevator_proc_open(struct inode *sp_inode, struct file *sp_file)
 {
     read_p = 1;
@@ -109,6 +110,7 @@ static ssize_t elevator_proc_read(struct file *file, char __user *ubuf, size_t c
     len += sprintf(buf + len, "Current floor: %d\n", current_floor);
     len += sprintf(buf + len, "Current load: %d lbs\n", elevator_weight);
 
+    print_passengers();
     // Include information about passengers in the elevator
     struct list_head *pos;
     Passenger *p;
@@ -179,6 +181,8 @@ static int __init elevator_init(void)
     STUB_issue_request = issue_request;
     STUB_stop_elevator = stop_elevator;
 
+    elevator_state = OFFLINE; // Initialize elevator state to OFFLINE
+
     elevator.total_cnt = 0;
     elevator.total_weight = 0;
 
@@ -199,7 +203,10 @@ static int __init elevator_init(void)
         INIT_LIST_HEAD(&floor_lists[i]);
     }
 
+    message = kmalloc(ENTRY_SIZE, GFP_KERNEL);
+
     printk(KERN_INFO "Elevator module initialization completed\n");
+
     return 0;
 }
 

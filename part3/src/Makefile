@@ -11,4 +11,15 @@ all:
 clean:
 	$(MAKE) -C $(KDIR) M=$(PWD) clean
 
+load: 
+	sudo insmod elevator.ko
+
+unload:
+	sudo rmmod elevator.ko
+
+watch: 
+	watch -n1 cat /proc/elevator
+
+	
+
 

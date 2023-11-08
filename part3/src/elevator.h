@@ -9,6 +9,7 @@
 #include <linux/uaccess.h>
 #include <linux/random.h>
 #include <linux/list.h>
+#include <linux/seq_file.h>
 
 
 #include <linux/delay.h>
@@ -59,6 +60,7 @@ static ssize_t elevator_proc_read(struct file *file, char __user *ubuf, size_t c
 int elevator_proc_release(struct inode *sp_inode, struct file *sp_file); 
 static int __init elevator_init(void);
 static void __exit elevator_exit(void);
+static void print_passengers_seq(struct seq_file *seq);
 
 // Declare variables for floor_count, num_passengers, and passengers_serviced
 static char floor_count[20]; // Initialize as needed

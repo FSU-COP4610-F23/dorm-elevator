@@ -1,1 +1,0 @@
-savedcmd_/home/masopeh/project-2/elevator/part3/src/elevator.mod := printf '%s\n'   elevator.o | awk '!x[$$0]++ { print("/home/masopeh/project-2/elevator/part3/src/"$$0) }' > /home/masopeh/project-2/elevator/part3/src/elevator.mod

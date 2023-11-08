@@ -124,311 +124,370 @@ int print_passengers(void)
     return 0;
 }
 
-int delete_passengers(int type)
-{
-    // ... (unchanged)
-    // Check if the type is valid
-    if (type < 0 || type >= NUM_PASSENGER_TYPES)
-    {
-        return 1; // Return 1 for an invalid type
-    }
 
-    // Use kmalloc to allocate a buffer for formatting the type
-    char type_str[4]; // Adjust the size as needed
-    snprintf(type_str, sizeof(type_str), "%c", "FOSJ"[type]);
+// Function to load passengers onto the elevator
+void load_passengers(int current_floor) {
+    struct list_head *floor_pos, *floor_temp;
+    Passenger *floor_passenger;
 
-    struct list_head *temp, *pos;
-    Passenger *p;
+    list_for_each_safe(floor_pos, floor_temp, &floor_lists[current_floor - 1]) {
+        floor_passenger = list_entry(floor_pos, Passenger, list);
 
-    // Lock the elevator_mutex to access shared data
-    mutex_lock(&elevator_mutex);
-
-    // Delete passengers of the specified type from the elevator
-    list_for_each_safe(pos, temp, &elevator.list)
-    {
-        p = list_entry(pos, Passenger, list);
-
-        if (p->id[0] == type_str[0])
-        {
-            elevator.total_cnt--;
-            elevator.total_weight -= p->weight;
-            list_del(pos);
-            kfree(p);
+        if (elevator.total_weight + floor_passenger->weight <= MAX_LOAD) {
+            list_del(floor_pos);
+            list_add_tail(floor_pos, &elevator.list);
+            elevator.total_weight += floor_passenger->weight;
+            elevator.total_cnt++;
+        } else {
+            break;
         }
     }
-
-    // Unlock the elevator_mutex
-    mutex_unlock(&elevator_mutex);
-
-    // Lock the elevator_mutex for each floor and remove passengers from waiting lists
-    for (int i = 0; i < 6; i++)
-    {
-        if (i == type)
-        {
-            continue; // Skip the specified floor
-        }
-
-        mutex_lock(&elevator_mutex);
-
-        // Delete passengers of the specified type from the floor's waiting list
-        list_for_each_safe(pos, temp, &floor_lists[i])
-        {
-            p = list_entry(pos, Passenger, list);
-
-            if (p->id[0] == type_str[0])
-            {
-                floor_count[i]--;
-                list_del(pos);
-                kfree(p);
-            }
-        }
-
-        mutex_unlock(&elevator_mutex);
-    }
-
-    return 0;
 }
 
-static int elevator_thread_function(void *data)
-{
-    struct Elevator *elevator = (struct Elevator *)data;
-
-    while (!kthread_should_stop())
-    {
-        set_current_state(TASK_INTERRUPTIBLE);
-
-        if (elevator_state == LOADING)
-        {
+// Elevator thread function
+static int elevator_thread_function(void *data) {
+    while (!kthread_should_stop()) {
+        if (elevator_state == LOADING) {
+            // Unload passengers with the same destination as the current floor
             struct list_head *pos, *temp;
             Passenger *p;
 
-            mutex_lock(&elevator_mutex);
-
-            list_for_each_safe(pos, temp, &elevator->list)
-            {
+            list_for_each_safe(pos, temp, &elevator.list) {
                 p = list_entry(pos, Passenger, list);
-                if (p->destination == current_floor)
-                {
+                if (p->destination == current_floor) {
                     list_del(pos);
-                    kfree(p);
-                    elevator->total_weight -= p->weight;
-                    elevator->total_cnt--;
-                    elevator_weight -= p->weight; // Update elevator_weight
-                    passengers_serviced++;
+                    //kfree(p);  // Since you didn't allocate memory for passengers, no need to free
+                    elevator.total_weight -= p->weight;
+                    elevator.total_cnt--;
                 }
             }
 
             // Load passengers waiting on the current floor
-            struct list_head *floor_pos, *floor_temp;
-            Passenger *floor_passenger;
+            load_passengers(current_floor);
 
-            list_for_each_safe(floor_pos, floor_temp, &floor_lists[current_floor - 1])
-            {
-                floor_passenger = list_entry(floor_pos, Passenger, list);
-
-                if (elevator_weight + floor_passenger->weight <= MAX_LOAD)
-                {
-                    list_del(floor_pos);
-                    list_add_tail(floor_pos, &elevator->list);
-                    elevator_weight += floor_passenger->weight;
-                    elevator->total_weight += floor_passenger->weight;
-                    elevator->total_cnt++;
-                }
-                else
-                {
-                    break;
-                }
-            }
-
-            mutex_unlock(&elevator_mutex);
-
-            if (list_empty(&floor_lists[current_floor - 1]))
-            {
+            if (list_empty(&floor_lists[current_floor - 1])) {
                 elevator_state = IDLE;
-            }
-            else
-            {
+            } else {
                 elevator_state = LOADING;
             }
-        }
-        else if (elevator_state == IDLE)
-        {
-            // Logic for IDLE state
-            set_current_state(TASK_INTERRUPTIBLE);
-
+        } else if (elevator_state == IDLE) {
             // Check if there are any passengers in the elevator
-            if (list_empty(&elevator->list))
-            {
+            if (list_empty(&elevator.list)) {
                 // If the elevator is empty, stay in IDLE state
                 elevator_state = IDLE;
-            }
-            else
-            {
+            } else {
                 // If there are passengers in the elevator, unload passengers at the current floor
                 struct list_head *pos, *temp;
                 Passenger *p;
 
-                mutex_lock(&elevator_mutex);
-
-                list_for_each_safe(pos, temp, &elevator->list)
-                {
+                list_for_each_safe(pos, temp, &elevator.list) {
                     p = list_entry(pos, Passenger, list);
-                    if (p->destination == current_floor)
-                    {
+                    if (p->destination == current_floor) {
                         list_del(pos);
-                        kfree(p);
-                        elevator->total_weight -= p->weight;
-                        elevator->total_cnt--;
-                        elevator_weight -= p->weight;
-                        passengers_serviced++;
+                        //kfree(p);  // Since you didn't allocate memory for passengers, no need to free
+                        elevator.total_weight -= p->weight;
+                        elevator.total_cnt--;
                     }
                 }
 
-                mutex_unlock(&elevator_mutex);
+                // Load passengers waiting on the current floor
+                load_passengers(current_floor);
 
-                // Check if there are passengers waiting on the current floor
-                if (!list_empty(&floor_lists[current_floor - 1]))
-                {
-                    // Load passengers from the current floor
-                    mutex_lock(&elevator_mutex);
-
-                    struct list_head *floor_pos, *floor_temp;
-                    Passenger *floor_passenger;
-
-                    list_for_each_safe(floor_pos, floor_temp, &floor_lists[current_floor - 1])
-                    {
-                        floor_passenger = list_entry(floor_pos, Passenger, list);
-
-                        if (elevator_weight + floor_passenger->weight <= MAX_LOAD)
-                        {
-                            list_del(floor_pos);
-                            list_add_tail(floor_pos, &elevator->list);
-                            elevator_weight += floor_passenger->weight;
-                            elevator->total_weight += floor_passenger->weight;
-                            elevator->total_cnt++;
-                        }
-                        else
-                        {
-                            break;
-                        }
-                    }
-
-                    mutex_unlock(&elevator_mutex);
-
+                if (!list_empty(&floor_lists[current_floor - 1])) {
                     elevator_state = LOADING;
-                }
-                else
-                {
-                    // If no passengers are waiting on the current floor, stay in IDLE state
+                } else {
                     elevator_state = IDLE;
                 }
             }
 
-            schedule_timeout(HZ);
-        }
-        else if (elevator_state == UP || elevator_state == DOWN)
-        {
-            // Logic for UP or DOWN state
-            set_current_state(TASK_INTERRUPTIBLE);
-
-            // Check if the elevator is moving up or down
-            int next_floor;
-            if (elevator_state == UP)
-            {
-                next_floor = current_floor + 1;
-            }
-            else // elevator_state == DOWN
-            {
-                next_floor = current_floor - 1;
-            }
-
+            msleep(1000);  // Sleep for 1 second in IDLE state
+        } else if (elevator_state == UP || elevator_state == DOWN) {
             // Check if the elevator has reached its destination floor
-            if (next_floor == 0 || next_floor == 7)
-            {
+            if (current_floor == 1 || current_floor == 6) {
                 // The elevator has reached the top or bottom floor, change direction
-                if (elevator_state == UP)
-                {
+                if (elevator_state == UP) {
                     elevator_state = DOWN;
-                }
-                else // elevator_state == DOWN
-                {
+                } else {
                     elevator_state = UP;
                 }
-            }
-            else
-            {
-                // Update the elevator's current floor
-                current_floor = next_floor;
+            } else {
+                // Move to the next floor
+                current_floor = (elevator_state == UP) ? current_floor + 1 : current_floor - 1;
 
                 // Unload passengers with the same destination as the current floor
                 struct list_head *pos, *temp;
                 Passenger *p;
 
-                mutex_lock(&elevator_mutex);
-
-                list_for_each_safe(pos, temp, &elevator->list)
-                {
+                list_for_each_safe(pos, temp, &elevator.list) {
                     p = list_entry(pos, Passenger, list);
-                    if (p->destination == current_floor)
-                    {
+                    if (p->destination == current_floor) {
                         list_del(pos);
-                        kfree(p);
-                        elevator->total_weight -= p->weight;
-                        elevator->total_cnt--;
-                        elevator_weight -= p->weight;
-                        passengers_serviced++;
+                        //kfree(p);  // Since you didn't allocate memory for passengers, no need to free
+                        elevator.total_weight -= p->weight;
+                        elevator.total_cnt--;
                     }
                 }
 
-                mutex_unlock(&elevator_mutex);
+                // Load passengers waiting on the current floor
+                load_passengers(current_floor);
 
-                // Check if there are passengers waiting on the current floor
-                if (!list_empty(&floor_lists[current_floor - 1]))
-                {
-                    // Load passengers from the current floor
-                    mutex_lock(&elevator_mutex);
-
-                    struct list_head *floor_pos, *floor_temp;
-                    Passenger *floor_passenger;
-
-                    list_for_each_safe(floor_pos, floor_temp, &floor_lists[current_floor - 1])
-                    {
-                        floor_passenger = list_entry(floor_pos, Passenger, list);
-
-                        if (elevator_weight + floor_passenger->weight <= MAX_LOAD)
-                        {
-                            list_del(floor_pos);
-                            list_add_tail(floor_pos, &elevator->list);
-                            elevator_weight += floor_passenger->weight;
-                            elevator->total_weight += floor_passenger->weight;
-                            elevator->total_cnt++;
-                        }
-                        else
-                        {
-                            break;
-                        }
-                    }
-
-                    mutex_unlock(&elevator_mutex);
-
-                    elevator_state = LOADING;
-                }
-                else
-                {
-                    // If no passengers are waiting on the current floor, stay in UP or DOWN state
-                    // and continue moving to the next floor
-                }
+                msleep(1000);  // Sleep for 1 second between floors
             }
-
-            schedule_timeout(HZ);
         }
 
-        schedule_timeout(HZ);
+        msleep(1000);  // Sleep for 1 second between iterations
     }
 
-    complete(&elevator_completion);
     return 0;
 }
+
+
+
+
+
+
+
+
+// static int elevator_thread_function(void *data)
+// {
+//     struct Elevator *elevator = (struct Elevator *)data;
+
+//     while (!kthread_should_stop())
+//     {
+//         set_current_state(TASK_INTERRUPTIBLE);
+
+//         if (elevator_state == LOADING)
+//         {
+//             struct list_head *pos, *temp;
+//             Passenger *p;
+
+//             mutex_lock(&elevator_mutex);
+
+//             list_for_each_safe(pos, temp, &elevator->list)
+//             {
+//                 p = list_entry(pos, Passenger, list);
+//                 if (p->destination == current_floor)
+//                 {
+//                     list_del(pos);
+//                     kfree(p);
+//                     elevator->total_weight -= p->weight;
+//                     elevator->total_cnt--;
+//                     elevator_weight -= p->weight; // Update elevator_weight
+//                     passengers_serviced++;
+//                 }
+//             }
+
+//             // Load passengers waiting on the current floor
+//             struct list_head *floor_pos, *floor_temp;
+//             Passenger *floor_passenger;
+
+//             list_for_each_safe(floor_pos, floor_temp, &floor_lists[current_floor - 1])
+//             {
+//                 floor_passenger = list_entry(floor_pos, Passenger, list);
+
+//                 if (elevator_weight + floor_passenger->weight <= MAX_LOAD)
+//                 {
+//                     list_del(floor_pos);
+//                     list_add_tail(floor_pos, &elevator->list);
+//                     elevator_weight += floor_passenger->weight;
+//                     elevator->total_weight += floor_passenger->weight;
+//                     elevator->total_cnt++;
+//                 }
+//                 else
+//                 {
+//                     break;
+//                 }
+//             }
+
+//             mutex_unlock(&elevator_mutex);
+
+//             if (list_empty(&floor_lists[current_floor - 1]))
+//             {
+//                 elevator_state = IDLE;
+//             }
+//             else
+//             {
+//                 elevator_state = LOADING;
+//             }
+//         }
+//         else if (elevator_state == IDLE)
+//         {
+//             // Logic for IDLE state
+//             set_current_state(TASK_INTERRUPTIBLE);
+
+//             // Check if there are any passengers in the elevator
+//             if (list_empty(&elevator->list))
+//             {
+//                 // If the elevator is empty, stay in IDLE state
+//                 elevator_state = IDLE;
+//             }
+//             else
+//             {
+//                 // If there are passengers in the elevator, unload passengers at the current floor
+//                 struct list_head *pos, *temp;
+//                 Passenger *p;
+
+//                 mutex_lock(&elevator_mutex);
+
+//                 list_for_each_safe(pos, temp, &elevator->list)
+//                 {
+//                     p = list_entry(pos, Passenger, list);
+//                     if (p->destination == current_floor)
+//                     {
+//                         list_del(pos);
+//                         kfree(p);
+//                         elevator->total_weight -= p->weight;
+//                         elevator->total_cnt--;
+//                         elevator_weight -= p->weight;
+//                         passengers_serviced++;
+//                     }
+//                 }
+
+//                 mutex_unlock(&elevator_mutex);
+
+//                 // Check if there are passengers waiting on the current floor
+//                 if (!list_empty(&floor_lists[current_floor - 1]))
+//                 {
+//                     // Load passengers from the current floor
+//                     mutex_lock(&elevator_mutex);
+
+//                     struct list_head *floor_pos, *floor_temp;
+//                     Passenger *floor_passenger;
+
+//                     list_for_each_safe(floor_pos, floor_temp, &floor_lists[current_floor - 1])
+//                     {
+//                         floor_passenger = list_entry(floor_pos, Passenger, list);
+
+//                         if (elevator_weight + floor_passenger->weight <= MAX_LOAD)
+//                         {
+//                             list_del(floor_pos);
+//                             list_add_tail(floor_pos, &elevator->list);
+//                             elevator_weight += floor_passenger->weight;
+//                             elevator->total_weight += floor_passenger->weight;
+//                             elevator->total_cnt++;
+//                         }
+//                         else
+//                         {
+//                             break;
+//                         }
+//                     }
+
+//                     mutex_unlock(&elevator_mutex);
+
+//                     elevator_state = LOADING;
+//                 }
+//                 else
+//                 {
+//                     // If no passengers are waiting on the current floor, stay in IDLE state
+//                     elevator_state = IDLE;
+//                 }
+//             }
+
+//             schedule_timeout(HZ);
+//         }
+//         else if (elevator_state == UP || elevator_state == DOWN)
+//         {
+//             // Logic for UP or DOWN state
+//             set_current_state(TASK_INTERRUPTIBLE);
+
+//             // Check if the elevator is moving up or down
+//             int next_floor;
+//             if (elevator_state == UP)
+//             {
+//                 next_floor = current_floor + 1;
+//             }
+//             else // elevator_state == DOWN
+//             {
+//                 next_floor = current_floor - 1;
+//             }
+
+//             // Check if the elevator has reached its destination floor
+//             if (next_floor == 0 || next_floor == 7)
+//             {
+//                 // The elevator has reached the top or bottom floor, change direction
+//                 if (elevator_state == UP)
+//                 {
+//                     elevator_state = DOWN;
+//                 }
+//                 else // elevator_state == DOWN
+//                 {
+//                     elevator_state = UP;
+//                 }
+//             }
+//             else
+//             {
+//                 // Update the elevator's current floor
+//                 current_floor = next_floor;
+
+//                 // Unload passengers with the same destination as the current floor
+//                 struct list_head *pos, *temp;
+//                 Passenger *p;
+
+//                 mutex_lock(&elevator_mutex);
+
+//                 list_for_each_safe(pos, temp, &elevator->list)
+//                 {
+//                     p = list_entry(pos, Passenger, list);
+//                     if (p->destination == current_floor)
+//                     {
+//                         list_del(pos);
+//                         kfree(p);
+//                         elevator->total_weight -= p->weight;
+//                         elevator->total_cnt--;
+//                         elevator_weight -= p->weight;
+//                         passengers_serviced++;
+//                     }
+//                 }
+
+//                 mutex_unlock(&elevator_mutex);
+
+//                 // Check if there are passengers waiting on the current floor
+//                 if (!list_empty(&floor_lists[current_floor - 1]))
+//                 {
+//                     // Load passengers from the current floor
+//                     mutex_lock(&elevator_mutex);
+
+//                     struct list_head *floor_pos, *floor_temp;
+//                     Passenger *floor_passenger;
+
+//                     list_for_each_safe(floor_pos, floor_temp, &floor_lists[current_floor - 1])
+//                     {
+//                         floor_passenger = list_entry(floor_pos, Passenger, list);
+
+//                         if (elevator_weight + floor_passenger->weight <= MAX_LOAD)
+//                         {
+//                             list_del(floor_pos);
+//                             list_add_tail(floor_pos, &elevator->list);
+//                             elevator_weight += floor_passenger->weight;
+//                             elevator->total_weight += floor_passenger->weight;
+//                             elevator->total_cnt++;
+//                         }
+//                         else
+//                         {
+//                             break;
+//                         }
+//                     }
+
+//                     mutex_unlock(&elevator_mutex);
+
+//                     elevator_state = LOADING;
+//                 }
+//                 else
+//                 {
+//                     // If no passengers are waiting on the current floor, stay in UP or DOWN state
+//                     // and continue moving to the next floor
+//                 }
+//             }
+
+//             schedule_timeout(HZ);
+//         }
+
+//         schedule_timeout(HZ);
+//     }
+
+//     complete(&elevator_completion);
+//     return 0;
+// }
 
 int start_elevator(void)
 {

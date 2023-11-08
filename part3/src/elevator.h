@@ -10,8 +10,6 @@
 #include <linux/random.h>
 #include <linux/list.h>
 #include <linux/seq_file.h>
-
-
 #include <linux/delay.h>
 #include <linux/random.h>
 #include <linux/kthread.h> // Added for kthread_should_stop
@@ -47,6 +45,7 @@ extern int passengersServiced(void);
 int print_passengers(void);
 int delete_passengers(int type);
 static int elevator_thread_function(void *data);
+void load_passengers(int current_floor);
 
 
 int issue_request(int start_floor, int destination_floor, int type); 
@@ -60,7 +59,6 @@ static ssize_t elevator_proc_read(struct file *file, char __user *ubuf, size_t c
 int elevator_proc_release(struct inode *sp_inode, struct file *sp_file); 
 static int __init elevator_init(void);
 static void __exit elevator_exit(void);
-static void print_passengers_seq(struct seq_file *seq);
 
 // Declare variables for floor_count, num_passengers, and passengers_serviced
 static char floor_count[20]; // Initialize as needed
@@ -70,11 +68,6 @@ static int current_floor = 1;
 static int elevator_weight = 0;
 static int passengers_serviced = 0;
 static int read_p;
-
-// int generatr_random(int, int);
-// int generate_random_start_floor();
-// int generate_random_passenger_type();
-// int generate_random_destination_floor();
 
 // Define passenger types
 #define FRESHMAN 0
@@ -105,6 +98,7 @@ typedef struct passenger
     char type;
     struct list_head list;
 } Passenger;
+
 
 Passenger f1, f2, f3, f4, f5, f6;
 struct Elevator elevator;

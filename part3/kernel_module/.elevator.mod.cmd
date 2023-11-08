@@ -1,0 +1,1 @@
+savedcmd_/home/masopeh/project-2/elevator/part3/kernel_module/elevator.mod := printf '%s\n'   kernel_module/elevator.o | awk '!x[$$0]++ { print("/home/masopeh/project-2/elevator/part3/"$$0) }' > /home/masopeh/project-2/elevator/part3/kernel_module/elevator.mod

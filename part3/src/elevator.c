@@ -283,10 +283,10 @@ int exit_elevator(void) {
     }
 
     elevator_state = LOADING;
-    mutex_unlock(&elevator_mutex);
     msleep(1000);
     unload_passengers();
     }
+    mutex_unlock(&elevator_mutex);
     //exit while loop means elevator is empty
     elevator_state = OFFLINE;
     return 1;

@@ -245,11 +245,10 @@ This will run the program ...
 
 
 ## Bugs
-- **Bug 1**: This is bug 1.
-- **Bug 2**: This is bug 2.
-- **Bug 3**: This is bug 3.
+- Hopefully none :D
 
 ## Considerations
+- We did our best catching and fixing elevator issues we noticed with the extra time from the super helpful extension. Jasmine also carried where she could when it was challenging to get help from lovely TAs due to people swarm/being busy; so not every one of our questions was answered.
 [Description]
 # project-2-group-5
 # project-2-group-5

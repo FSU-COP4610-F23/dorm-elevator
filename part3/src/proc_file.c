@@ -5,7 +5,7 @@
 int elevator_proc_open(struct inode *sp_inode, struct file *sp_file)
 {
     read_p = 1;
-
+/*
     // Allocate memory for the message buffer
     message = kmalloc(ENTRY_SIZE, GFP_KERNEL);
 
@@ -14,7 +14,7 @@ int elevator_proc_open(struct inode *sp_inode, struct file *sp_file)
         printk(KERN_WARNING "elevator_proc_open: Failed to allocate memory\n");
         return -ENOMEM;
     }
-/*
+
     // Clear the message buffer
     memset(message, 0, ENTRY_SIZE);
 
@@ -109,7 +109,6 @@ static ssize_t elevator_proc_read(struct file *file, char __user *ubuf, size_t c
     len += sprintf(buf + len, "Current floor: %d\n", current_floor);
     len += sprintf(buf + len, "Current load: %d lbs\n", elevator_weight);
 
-    //print_passengers();
     // Include information about passengers in the elevator
     struct list_head *pos;
     Passenger *p;
@@ -146,11 +145,13 @@ static ssize_t elevator_proc_read(struct file *file, char __user *ubuf, size_t c
 
 int elevator_proc_release(struct inode *sp_inode, struct file *sp_file)
 {
+/*
     if (message)
     {
         kfree(message);
         message = NULL;
     }
+*/
     return 0;
 }
 
@@ -180,12 +181,6 @@ static int __init elevator_init(void)
     elevator.total_weight = 0;
 
     INIT_LIST_HEAD(&elevator.list);
-    INIT_LIST_HEAD(&f1.list);
-    INIT_LIST_HEAD(&f2.list);
-    INIT_LIST_HEAD(&f3.list);
-    INIT_LIST_HEAD(&f4.list);
-    INIT_LIST_HEAD(&f5.list);
-    INIT_LIST_HEAD(&f6.list);
 
     mutex_init(&elevator_mutex);
 

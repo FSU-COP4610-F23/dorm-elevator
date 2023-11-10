@@ -40,7 +40,6 @@ extern int (*STUB_stop_elevator)(void);
 // Add declarations for missing functions
 extern void printFloorList(int floor);
 extern int FloorCountTotal(void);
-int print_passengers(void);
 int delete_passengers(int type);
 static int elevator_thread_function(void *data);
 void load_passengers(int current_floor);
@@ -102,8 +101,6 @@ typedef struct passenger
     struct list_head list;
 } Passenger;
 
-
-Passenger f1, f2, f3, f4, f5, f6;
 struct Elevator elevator;
 
 static DECLARE_COMPLETION(elevator_completion);

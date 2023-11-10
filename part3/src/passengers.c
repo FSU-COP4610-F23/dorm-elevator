@@ -143,3 +143,46 @@ int delete_passengers(int type)
 
     return 0;
 }
+
+void board_passenger(Passenger *p) {
+    mutex_lock(&elevator_mutex);
+    elevator_weight += p->weight;
+    elevator.total_cnt++;
+    // Add passenger to the elevator's list
+    list_add_tail(&p->list, &elevator.list);
+    mutex_unlock(&elevator_mutex);
+}
+
+void leave_passenger(Passenger *p) {
+    mutex_lock(&elevator_mutex);
+    elevator_weight -= p->weight;
+    elevator.total_cnt--;
+    // Remove passenger from the elevator's list
+    list_del(&p->list);
+    kfree(p); // Assuming you want to free the memory
+    mutex_unlock(&elevator_mutex);
+}
+
+
+void move_elevator(int direction) {
+    mutex_lock(&elevator_mutex);
+    if (direction == UP && current_floor < TOP_FLOOR) {
+        current_floor++;
+    } else if (direction == DOWN && current_floor > BOTTOM_FLOOR) {
+        current_floor--;
+    }
+    mutex_unlock(&elevator_mutex);
+}
+
+void service_passenger() {
+    mutex_lock(&elevator_mutex);
+    passengers_serviced++;
+    mutex_unlock(&elevator_mutex);
+}
+
+void update_waiting_passenger_count(int floor, int change) {
+    mutex_lock(&elevator_mutex);
+    floor_count[floor - 1] += change;
+    mutex_unlock(&elevator_mutex);
+}
+

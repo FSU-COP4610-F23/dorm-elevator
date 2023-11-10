@@ -1,1 +1,0 @@
-savedcmd_/usr/src/linux-6.5.11/GitHub/project-2-group-5/part3/src/Module.symvers :=  scripts/mod/modpost -m -a      -o /usr/src/linux-6.5.11/GitHub/project-2-group-5/part3/src/Module.symvers -T /usr/src/linux-6.5.11/GitHub/project-2-group-5/part3/src/modules.order -i Module.symvers -e 

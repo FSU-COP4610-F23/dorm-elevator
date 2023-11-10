@@ -44,15 +44,17 @@ int issue_request(int start_floor, int destination_floor, int type)
     return 0; // Return 0 for a valid request
 }
 
-
 // Function to load passengers onto the elevator
-void load_passengers(int current_floor) {
-    //mutex_lock(&elevator_mutex);    
+void load_passengers(int current_floor)
+{
+    // mutex_lock(&elevator_mutex);
     struct list_head *floor_pos, *floor_temp;
     Passenger *floor_passenger;
-    list_for_each_safe(floor_pos, floor_temp, &floor_lists[current_floor - 1]) {
+    list_for_each_safe(floor_pos, floor_temp, &floor_lists[current_floor - 1])
+    {
         floor_passenger = list_entry(floor_pos, Passenger, list);
-        if (elevator_weight + floor_passenger->weight <= MAX_LOAD && elevator_count + 1 <= 5) {
+        if (elevator_weight + floor_passenger->weight <= MAX_LOAD && elevator_count + 1 <= 5)
+        {
             list_del(floor_pos);
             list_add_tail(floor_pos, &elevator.list);
             elevator_weight += floor_passenger->weight;
@@ -60,16 +62,19 @@ void load_passengers(int current_floor) {
             floor_count[current_floor - 1]--;
         }
     }
-    //mutex_unlock(&elevator_mutex);
+    // mutex_unlock(&elevator_mutex);
 }
 
-void unload_passengers(void) {
-    //mutex_lock(&elevator_mutex);   
+void unload_passengers(void)
+{
+    // mutex_lock(&elevator_mutex);
     struct list_head *pos, *temp;
     Passenger *p;
-    list_for_each_safe(pos, temp, &elevator.list) {
+    list_for_each_safe(pos, temp, &elevator.list)
+    {
         p = list_entry(pos, Passenger, list);
-        if (p->destination == current_floor) {
+        if (p->destination == current_floor)
+        {
             list_del(pos);
             kfree(p);
             elevator_weight -= p->weight;
@@ -77,105 +82,125 @@ void unload_passengers(void) {
             passengers_serviced++;
         }
     }
-    //mutex_unlock(&elevator_mutex);
+    // mutex_unlock(&elevator_mutex);
 }
 
-void searchNextEmpty(void) {
-    //mutex_lock(&elevator_mutex);    
+void searchNextEmpty(void)
+{
+    // mutex_lock(&elevator_mutex);
     bool emptyFloor[6] = {true, true, true, true, true, true};
     bool empty = true;
-    for (int i = 0; i < 6; i++) {
-        //check for any passengers on every floor
-        if (!list_empty(&floor_lists[i])) {
-            emptyFloor[i] = false; //sets false for specific floor
-            empty = false; //false if at least 1 passenger exists on any floor
-        }   
+    for (int i = 0; i < 6; i++)
+    {
+        // check for any passengers on every floor
+        if (!list_empty(&floor_lists[i]))
+        {
+            emptyFloor[i] = false; // sets false for specific floor
+            empty = false;         // false if at least 1 passenger exists on any floor
+        }
     }
-    if (empty == true) {
+    if (empty == true)
+    {
         elevator_state = IDLE; // state for IDLE
-        //mutex_unlock(&elevator_mutex);
+        // mutex_unlock(&elevator_mutex);
         return;
     }
-    if (!emptyFloor[current_floor - 1]) {
+    if (!emptyFloor[current_floor - 1])
+    {
         elevator_state = LOADING;
-        //mutex_unlock(&elevator_mutex);
+        // mutex_unlock(&elevator_mutex);
         return;
     }
-    for (int i = 1; i < 6; i++) {
+    for (int i = 1; i < 6; i++)
+    {
         int add, sub;
         add = current_floor + i - 1;
         sub = current_floor - i - 1;
-        if (add <= 5 && !emptyFloor[add]) {
+        if (add <= 5 && !emptyFloor[add])
+        {
             elevator_state = UP;
             elevator_dest = current_floor + i;
-            //mutex_unlock(&elevator_mutex);
+            // mutex_unlock(&elevator_mutex);
             return;
         }
-        else if (sub >= 0 && !emptyFloor[sub]) {
+        else if (sub >= 0 && !emptyFloor[sub])
+        {
             elevator_state = DOWN;
             elevator_dest = current_floor - i;
-            //mutex_unlock(&elevator_mutex);
+            // mutex_unlock(&elevator_mutex);
             return;
         }
     }
-
 }
 
 // Elevator thread function
-static int elevator_thread_function(void *data) {
-    while (!kthread_should_stop()) {
+static int elevator_thread_function(void *data)
+{
+    while (!kthread_should_stop())
+    {
         mutex_lock(&elevator_mutex);
-        if (elevator_state == IDLE) { //idle when elevator is empty
-                //mutex_unlock(&elevator_mutex);
-                searchNextEmpty();// if floors all empty, stay in IDLE state
-                //mutex_lock(&elevator_mutex);
-        } 
-        else if (elevator_state == UP || elevator_state == DOWN) {
-            while (current_floor != elevator_dest) {
-                if (elevator_state == UP) {
-                    //mutex_unlock(&elevator_mutex);
+        if (elevator_state == IDLE)
+        { // idle when elevator is empty
+            // mutex_unlock(&elevator_mutex);
+            searchNextEmpty(); // if floors all empty, stay in IDLE state
+                               // mutex_lock(&elevator_mutex);
+        }
+        else if (elevator_state == UP || elevator_state == DOWN)
+        {
+            while (current_floor != elevator_dest)
+            {
+                if (elevator_state == UP)
+                {
+                    // mutex_unlock(&elevator_mutex);
                     msleep(2000);
-                    //mutex_lock(&elevator_mutex);
+                    // mutex_lock(&elevator_mutex);
                     current_floor = current_floor + 1;
                 }
-                else if (elevator_state == DOWN) {
-                    //mutex_unlock(&elevator_mutex);
+                else if (elevator_state == DOWN)
+                {
+                    // mutex_unlock(&elevator_mutex);
                     msleep(2000);
-                    //mutex_lock(&elevator_mutex);
+                    // mutex_lock(&elevator_mutex);
                     current_floor = current_floor - 1;
                 }
             }
             elevator_state = LOADING;
-        } 
-        else if (elevator_state == LOADING) {
-            if (!list_empty(&elevator.list)) {
-                //mutex_unlock(&elevator_mutex);
+        }
+        else if (elevator_state == LOADING)
+        {
+            if (!list_empty(&elevator.list))
+            {
+                // mutex_unlock(&elevator_mutex);
                 msleep(1000);
-                //mutex_unlock(&elevator_mutex);
-                unload_passengers();  
-                //mutex_lock(&elevator_mutex);
+                // mutex_unlock(&elevator_mutex);
+                unload_passengers();
+                // mutex_lock(&elevator_mutex);
             }
-            if (!list_empty(&floor_lists[current_floor - 1])) {
-                //mutex_unlock(&elevator_mutex);
+            if (!list_empty(&floor_lists[current_floor - 1]))
+            {
+                // mutex_unlock(&elevator_mutex);
                 msleep(1000);
-                //mutex_unlock(&elevator_mutex);
+                // mutex_unlock(&elevator_mutex);
                 load_passengers(current_floor);
-                //mutex_lock(&elevator_mutex);
+                // mutex_lock(&elevator_mutex);
             }
-            if (list_empty(&elevator.list)) {
-                //mutex_unlock(&elevator_mutex);
+            if (list_empty(&elevator.list))
+            {
+                // mutex_unlock(&elevator_mutex);
                 searchNextEmpty();
-                //mutex_lock(&elevator_mutex);  
+                // mutex_lock(&elevator_mutex);
             }
-            else {
-                Passenger* p;
+            else
+            {
+                Passenger *p;
                 p = list_first_entry(&elevator.list, Passenger, list);
                 elevator_dest = p->destination;
                 if (elevator_dest > current_floor)
                     elevator_state = UP;
                 else if (elevator_dest < current_floor)
                     elevator_state = DOWN;
-                else {
+                else
+                {
                     elevator_state = LOADING;
                 }
             }
@@ -186,10 +211,12 @@ static int elevator_thread_function(void *data) {
     return exit_elevator();
 }
 
-int exit_elevator(void) {
+int exit_elevator(void)
+{
     mutex_lock(&elevator_mutex);
-    while (!list_empty(&elevator.list)) {
-        Passenger* p;
+    while (!list_empty(&elevator.list))
+    {
+        Passenger *p;
         p = list_first_entry(&elevator.list, Passenger, list);
         elevator_dest = p->destination;
         if (elevator_dest > current_floor)
@@ -197,274 +224,33 @@ int exit_elevator(void) {
         else if (elevator_dest < current_floor)
             elevator_state = DOWN;
 
-    while (current_floor != elevator_dest) {
-        if (elevator_state == UP) {
-            //mutex_unlock(&elevator_mutex);
-            msleep(2000);
-            //mutex_lock(&elevator_mutex);
-            current_floor = current_floor + 1;
+        while (current_floor != elevator_dest)
+        {
+            if (elevator_state == UP)
+            {
+                // mutex_unlock(&elevator_mutex);
+                msleep(2000);
+                // mutex_lock(&elevator_mutex);
+                current_floor = current_floor + 1;
+            }
+            else if (elevator_state == DOWN)
+            {
+                // mutex_unlock(&elevator_mutex);
+                msleep(2000);
+                // mutex_lock(&elevator_mutex);
+                current_floor = current_floor - 1;
+            }
         }
-        else if (elevator_state == DOWN) {
-            //mutex_unlock(&elevator_mutex);
-            msleep(2000);
-            //mutex_lock(&elevator_mutex);
-            current_floor = current_floor - 1;
-        }
-    }
 
-    elevator_state = LOADING;
-    msleep(1000);
-    unload_passengers();
+        elevator_state = LOADING;
+        msleep(1000);
+        unload_passengers();
     }
     mutex_unlock(&elevator_mutex);
-    //exit while loop means elevator is empty
+    // exit while loop means elevator is empty
     elevator_state = OFFLINE;
     return 1;
 }
-
-
-/*
- static int elevator_thread_function(void *data)
- {
-     struct Elevator *elevator = (struct Elevator *)data;
-
-     while (!kthread_should_stop())
-     {
-         set_current_state(TASK_INTERRUPTIBLE);
-
-         if (elevator_state == LOADING)
-         {
-             struct list_head *pos, *temp;
-             Passenger *p;
-
-             mutex_lock(&elevator_mutex);
-
-             list_for_each_safe(pos, temp, &elevator->list)
-             {
-                 p = list_entry(pos, Passenger, list);
-                 if (p->destination == current_floor)
-                 {
-                     list_del(pos);
-                     kfree(p);
-                     elevator->total_weight -= p->weight;
-                     elevator->total_cnt--;
-                     elevator_weight -= p->weight; // Update elevator_weight
-                     passengers_serviced++;
-                 }
-             }
-
-             // Load passengers waiting on the current floor
-             struct list_head *floor_pos, *floor_temp;
-             Passenger *floor_passenger;
-
-             list_for_each_safe(floor_pos, floor_temp, &floor_lists[current_floor - 1])
-             {
-                 floor_passenger = list_entry(floor_pos, Passenger, list);
-
-                 if (elevator_weight + floor_passenger->weight <= MAX_LOAD)
-                 {
-                     list_del(floor_pos);
-                     list_add_tail(floor_pos, &elevator->list);
-                     elevator_weight += floor_passenger->weight;
-                     elevator->total_weight += floor_passenger->weight;
-                     elevator->total_cnt++;
-                 }
-                 else
-                 {
-                     break;
-                 }
-             }
-
-             mutex_unlock(&elevator_mutex);
-
-             if (list_empty(&floor_lists[current_floor - 1]))
-             {
-                 elevator_state = IDLE;
-             }
-             else
-             {
-                 elevator_state = LOADING;
-             }
-         }
-         else if (elevator_state == IDLE)
-         {
-             // Logic for IDLE state
-             set_current_state(TASK_INTERRUPTIBLE);
-
-             // Check if there are any passengers in the elevator
-             if (list_empty(&elevator->list))
-             {
-                 // If the elevator is empty, stay in IDLE state
-                 elevator_state = IDLE;
-             }
-             else
-             {
-                 // If there are passengers in the elevator, unload passengers at the current floor
-                 struct list_head *pos, *temp;
-                 Passenger *p;
-
-                 mutex_lock(&elevator_mutex);
-
-                 list_for_each_safe(pos, temp, &elevator->list)
-                 {
-                     p = list_entry(pos, Passenger, list);
-                     if (p->destination == current_floor)
-                     {
-                         list_del(pos);
-                         kfree(p);
-                         elevator->total_weight -= p->weight;
-                         elevator->total_cnt--;
-                         elevator_weight -= p->weight;
-                         passengers_serviced++;
-                     }
-                 }
-
-                 mutex_unlock(&elevator_mutex);
-
-                 // Check if there are passengers waiting on the current floor
-                 if (!list_empty(&floor_lists[current_floor - 1]))
-                 {
-                     // Load passengers from the current floor
-                     mutex_lock(&elevator_mutex);
-
-                     struct list_head *floor_pos, *floor_temp;
-                     Passenger *floor_passenger;
-
-                     list_for_each_safe(floor_pos, floor_temp, &floor_lists[current_floor - 1])
-                {
-                         floor_passenger = list_entry(floor_pos, Passenger, list);
-
-                         if (elevator_weight + floor_passenger->weight <= MAX_LOAD)
-                         {
-                             list_del(floor_pos);
-                             list_add_tail(floor_pos, &elevator->list);
-                             elevator_weight += floor_passenger->weight;
-                             elevator->total_weight += floor_passenger->weight;
-                             elevator->total_cnt++;
-                         }
-                         else
-                         {
-                             break;
-                         }
-                     }
-
-                     mutex_unlock(&elevator_mutex);
-
-                     elevator_state = LOADING;
-                 }
-                 else
-                 {
-                     // If no passengers are waiting on the current floor, stay in IDLE state
-                     elevator_state = IDLE;
-                 }
-             }
-
-             schedule_timeout(HZ);
-         }
-         else if (elevator_state == UP || elevator_state == DOWN)
-         {
-             // Logic for UP or DOWN state
-             set_current_state(TASK_INTERRUPTIBLE);
-
-             // Check if the elevator is moving up or down
-             int next_floor;
-             if (elevator_state == UP)
-             {
-                 next_floor = current_floor + 1;
-             }
-             else // elevator_state == DOWN
-             {
-                 next_floor = current_floor - 1;
-             }
-
-             // Check if the elevator has reached its destination floor
-             if (next_floor == 0 || next_floor == 7)
-             {
-                 // The elevator has reached the top or bottom floor, change direction
-                 if (elevator_state == UP)
-                 {
-                     elevator_state = DOWN;
-                 }
-                 else // elevator_state == DOWN
-                 {
-                     elevator_state = UP;
-                 }
-             }
-             else
-             {
-                 // Update the elevator's current floor
-                 current_floor = next_floor;
-
-                 // Unload passengers with the same destination as the current floor
-                 struct list_head *pos, *temp;
-                 Passenger *p;
-
-                 mutex_lock(&elevator_mutex);
-
-                 list_for_each_safe(pos, temp, &elevator->list)
-                 {
-                     p = list_entry(pos, Passenger, list);
-                     if (p->destination == current_floor)
-                     {
-                         list_del(pos);
-                         kfree(p);
-                         elevator->total_weight -= p->weight;
-                         elevator->total_cnt--;
-                         elevator_weight -= p->weight;
-                         passengers_serviced++;
-                     }
-                 }
-
-                 mutex_unlock(&elevator_mutex);
-
-                 // Check if there are passengers waiting on the current floor
-                 if (!list_empty(&floor_lists[current_floor - 1]))
-                 {
-                     // Load passengers from the current floor
-                     mutex_lock(&elevator_mutex);
-
-                     struct list_head *floor_pos, *floor_temp;
-                     Passenger *floor_passenger;
-
-                     list_for_each_safe(floor_pos, floor_temp, &floor_lists[current_floor - 1])
-                     {
-                         floor_passenger = list_entry(floor_pos, Passenger, list);
-
-                         if (elevator_weight + floor_passenger->weight <= MAX_LOAD)
-                         {
-                             list_del(floor_pos);
-                             list_add_tail(floor_pos, &elevator->list);
-                             elevator_weight += floor_passenger->weight;
-                             elevator->total_weight += floor_passenger->weight;
-                             elevator->total_cnt++;
-                         }
-                         else
-                         {
-                             break;
-                         }
-                     }
-
-                     mutex_unlock(&elevator_mutex);
-
-                     elevator_state = LOADING;
-                 }
-                 else
-                 {
-                     // If no passengers are waiting on the current floor, stay in UP or DOWN state
-                    // and continue moving to the next floor
-                 }
-             }
-
-             schedule_timeout(HZ);
-         }
-
-         schedule_timeout(HZ);
-     }
-
-     complete(&elevator_completion);
-     return 0;
- }
-*/
 
 int start_elevator(void)
 {
@@ -506,12 +292,12 @@ int stop_elevator(void)
     // Lock the elevator_mutex to ensure exclusive access
     mutex_lock(&elevator_mutex);
     if (elevator_state == OFFLINE)
-    {   // If the elevator is empty and all passengers have been serviced
+    { // If the elevator is empty and all passengers have been serviced
         mutex_unlock(&elevator_mutex);
-        return 0;// Return 0 for successful deactivation
+        return 0; // Return 0 for successful deactivation
     }
-    mutex_unlock(&elevator_mutex);// Unlock the elevator_mutex
-    return 1; // Return 1 if the elevator is not empty and deactivation is in progress
+    mutex_unlock(&elevator_mutex); // Unlock the elevator_mutex
+    return 1;                      // Return 1 if the elevator is not empty and deactivation is in progress
 }
 
 int FloorCountTotal(void)
@@ -526,4 +312,3 @@ int FloorCountTotal(void)
 
     return total_count;
 }
-

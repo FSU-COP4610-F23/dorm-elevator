@@ -14,7 +14,7 @@ int elevator_proc_open(struct inode *sp_inode, struct file *sp_file)
         printk(KERN_WARNING "elevator_proc_open: Failed to allocate memory\n");
         return -ENOMEM;
     }
-
+/*
     // Clear the message buffer
     memset(message, 0, ENTRY_SIZE);
 
@@ -74,7 +74,7 @@ int elevator_proc_open(struct inode *sp_inode, struct file *sp_file)
     snprintf(message + strlen(message), ENTRY_SIZE - strlen(message), "Number of passengers: %d\n", elevatorCount());
     snprintf(message + strlen(message), ENTRY_SIZE - strlen(message), "Number of passengers waiting: %d\n", FloorCountTotal());
     snprintf(message + strlen(message), ENTRY_SIZE - strlen(message), "Number of passengers serviced: %d\n", passengersServiced());
-
+*/
     return 0;
 }
 
@@ -110,20 +110,16 @@ static ssize_t elevator_proc_read(struct file *file, char __user *ubuf, size_t c
     len += sprintf(buf + len, "Current floor: %d\n", current_floor);
     len += sprintf(buf + len, "Current load: %d lbs\n", elevator_weight);
 
-    print_passengers();
+    //print_passengers();
     // Include information about passengers in the elevator
     struct list_head *pos;
     Passenger *p;
-    int i = 0;
+    len += sprintf(buf + len, "Elevator Status: ");
     list_for_each(pos, &elevator.list)
     {
         p = list_entry(pos, Passenger, list);
-        if (i % 5 == 0 && i > 0)
-        {
-            len += sprintf(buf + len, "\n");
-        }
-        len += sprintf(buf + len, "%s%d ", p->id, p->destination);
-        i++;
+        len += sprintf(buf + len, "%s ", p->id);
+
     }
     len += sprintf(buf + len, "\n");
 
@@ -138,15 +134,15 @@ static ssize_t elevator_proc_read(struct file *file, char __user *ubuf, size_t c
         list_for_each(pos, &floor_lists[floor - 1])
         {
             floor_passenger = list_entry(pos, Passenger, list);
-            len += sprintf(buf + len, " %c%d", floor_passenger->id[0], floor_passenger->destination);
+            len += sprintf(buf + len, " %s", floor_passenger->id);
         }
         len += sprintf(buf + len, "\n");
     }
 
     // Include the total number of passengers and passengers serviced
-    len += sprintf(buf + len, "Number of passengers: %d\n", elevatorCount());
+    len += sprintf(buf + len, "Number of passengers: %d\n", elevator_count);
     len += sprintf(buf + len, "Number of passengers waiting: %d\n", FloorCountTotal());
-    len += sprintf(buf + len, "Number of passengers serviced: %d\n", passengersServiced());
+    len += sprintf(buf + len, "Number of passengers serviced: %d\n", passengers_serviced);
 
     return simple_read_from_buffer(ubuf, count, ppos, buf, len);
 }

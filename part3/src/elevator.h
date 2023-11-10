@@ -6,7 +6,7 @@
 #include <linux/proc_fs.h>
 #include <linux/slab.h>
 #include <linux/string.h>
-#include <linux/uaccess.h>
+#include <linux/uaccess.h> 
 #include <linux/random.h>
 #include <linux/list.h>
 #include <linux/seq_file.h>
@@ -39,13 +39,13 @@ extern int (*STUB_stop_elevator)(void);
 
 // Add declarations for missing functions
 extern void printFloorList(int floor);
-extern int elevatorCount(void);
 extern int FloorCountTotal(void);
-extern int passengersServiced(void);
 int print_passengers(void);
 int delete_passengers(int type);
 static int elevator_thread_function(void *data);
 void load_passengers(int current_floor);
+void unload_passengers(void);
+void searchNextEmpty(void);
 
 
 int issue_request(int start_floor, int destination_floor, int type); 
@@ -61,11 +61,13 @@ static int __init elevator_init(void);
 static void __exit elevator_exit(void);
 
 // Declare variables for floor_count, num_passengers, and passengers_serviced
-static char floor_count[20]; // Initialize as needed
+static char floor_count[6]; // Initialize as needed
 
 static int elevator_state = OFFLINE;
+static int elevator_dest = 1;
 static int current_floor = 1;
 static int elevator_weight = 0;
+static int elevator_count = 0;
 static int passengers_serviced = 0;
 static int read_p;
 
@@ -77,7 +79,7 @@ static int read_p;
 
 #define NUM_PASSENGER_TYPES 4
 #define MAX_PASSENGERS 5
-#define MAX_LOAD 1000
+#define MAX_LOAD 750
 
 #define ERRORNUM -1
 

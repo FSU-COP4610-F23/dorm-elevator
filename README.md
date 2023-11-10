@@ -47,27 +47,27 @@ part1.trace]
 
 ### Part 3a: Adding System Calls
 - **Responsibilities**: [Description]
-- **Assigned to**: Alex Brown
+- **Assigned to**: Juancarlos Alguera, Angela Fields
 
 ### Part 3b: Kernel Compilation
 - **Responsibilities**: [Description]
-- **Assigned to**: Alex Brown, Jane Smith
+- **Assigned to**: Jasmine Masopeh, Juancarlos Alguera, Angela Fields
 
 ### Part 3c: Threads
 - **Responsibilities**: [Description]
-- **Assigned to**: Alex Brown, Jane Smith
+- **Assigned to**: Angela Fields, Jasmine Masopeh
 
 ### Part 3d: Linked List
 - **Responsibilities**: [Description]
-- **Assigned to**: Jane Smith
+- **Assigned to**: Juancarlos Alguera, Jasmine Masopeh
 
 ### Part 3e: Mutexes
 - **Responsibilities**: [Description]
-- **Assigned to**: John Doe
+- **Assigned to**: Jasmine Masopeh, Juancarlos Alguera, Angela Fields
 
 ### Part 3f: Scheduling Algorithm
 - **Responsibilities**: [Description]
-- **Assigned to**: Alex Brown, John Doe
+- **Assigned to**: Jasmine Masopeh, Juancarlos Alguera, Angela Fields
 
 ## File Listing
 ```

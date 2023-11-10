@@ -43,8 +43,6 @@ __used __section("__versions") = {
 	{ 0xa08a3aa8, "STUB_issue_request" },
 	{ 0x88d8d38e, "STUB_stop_elevator" },
 	{ 0xcefb0c9f, "__mutex_init" },
-	{ 0x4d3b4797, "kthread_create_on_node" },
-	{ 0x8304a7a8, "wake_up_process" },
 	{ 0x1a3365ac, "remove_proc_entry" },
 	{ 0x87a21cb3, "__ubsan_handle_out_of_bounds" },
 	{ 0x3c3ff9fd, "sprintf" },
@@ -56,12 +54,14 @@ __used __section("__versions") = {
 	{ 0x4dfa8d4b, "mutex_lock" },
 	{ 0x3213f038, "mutex_unlock" },
 	{ 0xe914e41e, "strcpy" },
+	{ 0x4d3b4797, "kthread_create_on_node" },
+	{ 0x8304a7a8, "wake_up_process" },
 	{ 0xa916b694, "strnlen" },
 	{ 0xcbd4898c, "fortify_panic" },
 	{ 0x69acdf38, "memcpy" },
 	{ 0x54b1fac6, "__ubsan_handle_load_invalid_value" },
-	{ 0xb3f7646e, "kthread_should_stop" },
 	{ 0xf9a482f9, "msleep" },
+	{ 0xb3f7646e, "kthread_should_stop" },
 	{ 0xbdfb6dbb, "__fentry__" },
 	{ 0x55f8b4ea, "kmalloc_caches" },
 	{ 0x47022077, "kmalloc_trace" },
@@ -71,4 +71,4 @@ __used __section("__versions") = {
 MODULE_INFO(depends, "");
 
 
-MODULE_INFO(srcversion, "7441159F9B9D2772B54D9C7");
+MODULE_INFO(srcversion, "BCBE4091A0E9D43955592AC");

@@ -46,6 +46,7 @@ static int elevator_thread_function(void *data);
 void load_passengers(int current_floor);
 void unload_passengers(void);
 void searchNextEmpty(void);
+int exit_elevator(void);
 
 
 int issue_request(int start_floor, int destination_floor, int type); 

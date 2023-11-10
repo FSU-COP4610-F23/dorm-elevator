@@ -106,7 +106,6 @@ static ssize_t elevator_proc_read(struct file *file, char __user *ubuf, size_t c
         len += sprintf(buf + len, "UNKNOWN\n");
         break;
     }
-
     len += sprintf(buf + len, "Current floor: %d\n", current_floor);
     len += sprintf(buf + len, "Current load: %d lbs\n", elevator_weight);
 
@@ -129,7 +128,6 @@ static ssize_t elevator_proc_read(struct file *file, char __user *ubuf, size_t c
         len += sprintf(buf + len, "[%c] Floor %d: %d",
                        (current_floor == floor) ? '*' : ' ', floor, floor_count[floor - 1]);
 
-        struct list_head *floor_pos;
         Passenger *floor_passenger;
         list_for_each(pos, &floor_lists[floor - 1])
         {
@@ -138,7 +136,6 @@ static ssize_t elevator_proc_read(struct file *file, char __user *ubuf, size_t c
         }
         len += sprintf(buf + len, "\n");
     }
-
     // Include the total number of passengers and passengers serviced
     len += sprintf(buf + len, "Number of passengers: %d\n", elevator_count);
     len += sprintf(buf + len, "Number of passengers waiting: %d\n", FloorCountTotal());
@@ -192,8 +189,6 @@ static int __init elevator_init(void)
 
     mutex_init(&elevator_mutex);
 
-    elevator_thread = kthread_run(elevator_thread_function, &elevator, "elevator_thread");
-
     for (int i = 0; i < 6; i++)
     {
         INIT_LIST_HEAD(&floor_lists[i]);
@@ -210,11 +205,9 @@ module_init(elevator_init);
 
 static void __exit elevator_exit(void)
 {
-    if (elevator_state != OFFLINE)
-    {
+    if (elevator_state != OFFLINE) {
         // If the elevator is active, stop it and perform necessary cleanup
         STUB_stop_elevator();
-
         // Wait for the elevator thread to finish
         wait_for_completion(&elevator_completion);
     }

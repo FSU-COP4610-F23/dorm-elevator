@@ -22,56 +22,14 @@ MODULE_DESCRIPTION("Elevator Kernel Module");
 #define PERMS 0644
 #define PARENT NULL
 
-// Define states for the elevator
+// Elevator status
 #define OFFLINE 0
 #define IDLE 1
 #define LOADING 2
 #define UP 3
 #define DOWN 4
 
-static char *message;
-
-static struct proc_ops fops;
-
-extern int (*STUB_start_elevator)(void);
-extern int (*STUB_issue_request)(int start_floor, int destination_floor, int type);
-extern int (*STUB_stop_elevator)(void);
-
-// Add declarations for missing functions
-extern void printFloorList(int floor);
-extern int FloorCountTotal(void);
-int delete_passengers(int type);
-static int elevator_thread_function(void *data);
-void load_passengers(int current_floor);
-void unload_passengers(void);
-void searchNextEmpty(void);
-int exit_elevator(void);
-
-
-int issue_request(int start_floor, int destination_floor, int type); 
-static int elevator_thread_function(void *data);
-int start_elevator(void); 
-int stop_elevator(void);
-
-//proc file
-int elevator_proc_open(struct inode *sp_inode, struct file *sp_file); 
-static ssize_t elevator_proc_read(struct file *file, char __user *ubuf, size_t count, loff_t *ppos); 
-int elevator_proc_release(struct inode *sp_inode, struct file *sp_file); 
-static int __init elevator_init(void);
-static void __exit elevator_exit(void);
-
-// Declare variables for floor_count, num_passengers, and passengers_serviced
-static char floor_count[6]; // Initialize as needed
-
-static int elevator_state = OFFLINE;
-static int elevator_dest = 1;
-static int current_floor = 1;
-static int elevator_weight = 0;
-static int elevator_count = 0;
-static int passengers_serviced = 0;
-static int read_p;
-
-// Define passenger types
+// passenger types
 #define FRESHMAN 0
 #define SOPHOMORE 1
 #define JUNIOR 2
@@ -82,8 +40,29 @@ static int read_p;
 #define MAX_LOAD 750
 
 #define ERRORNUM -1
-
 #define PROC_BUF_SIZE 10000
+
+extern struct Elevator elevator;
+extern struct list_head floor_lists[6];
+extern struct task_struct *elevator_thread;
+// extern char floor_count[6]; // Initialize as needed
+// extern int elevator_state = OFFLINE;
+// extern int elevator_dest = 1;
+// extern int current_floor = 1;
+// extern int elevator_weight = 0;
+// extern int elevator_count = 0;
+// extern int passengers_serviced = 0;
+// extern int read_p;
+// extern char *message;
+
+extern char floor_count[6];
+extern int elevator_state;
+extern int elevator_dest;
+extern int current_floor;
+extern int elevator_weight;
+extern int elevator_count;
+extern int passengers_serviced;
+extern char *message;
 
 struct Elevator
 {
@@ -101,15 +80,50 @@ typedef struct passenger
     struct list_head list;
 } Passenger;
 
-struct Elevator elevator;
+int issue_request(int start_floor, int destination_floor, int type); 
+void load_passengers(int current_floor);
+void unload_passengers(void);
+void searchNextEmpty(void);
+int start_elevator(void); 
+int stop_elevator(void);
+int exit_elevator(void);
+extern int FloorCountTotal(void);
+
+// static struct proc_ops fops;
+
+extern int (*STUB_start_elevator)(void);
+extern int (*STUB_issue_request)(int start_floor, int destination_floor, int type);
+extern int (*STUB_stop_elevator)(void);
+
+
+int __init elevator_init(void);
+void __exit elevator_exit(void);
+int elevator_thread_function(void *data);
+
 
 static DECLARE_COMPLETION(elevator_completion);
 static DEFINE_MUTEX(elevator_mutex);
 
-// Define mutex for shared data access
-static struct mutex elevator_mutex;
-struct list_head floor_lists[6];
-// Define the elevator thread and its function
-static struct task_struct *elevator_thread;
+
+// Add declarations for missing functions
+// extern void printFloorList(int floor);
+// int delete_passengers(int type);
+// static int elevator_thread_function(void *data);
+
+
+//proc file
+// int elevator_proc_open(struct inode *sp_inode, struct file *sp_file); 
+// static ssize_t elevator_proc_read(struct file *file, char __user *ubuf, size_t count, loff_t *ppos); 
+// int elevator_proc_release(struct inode *sp_inode, struct file *sp_file); 
+
+
+// Declare variables for floor_count, num_passengers, and passengers_serviced
+
+
+
+// // Define mutex for shared data access
+// static struct mutex elevator_mutex;
+
+// // Define the elevator thread and its function
 
 #endif 

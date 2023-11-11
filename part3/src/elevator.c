@@ -1,6 +1,54 @@
 #include "elevator.h"
-#include "proc_file.c"
-// #include "passengers.c"
+#include "proc_file.h"
+
+// Define global variables here
+struct Elevator elevator;
+struct list_head floor_lists[6];
+struct task_struct *elevator_thread;
+char floor_count[6];
+int elevator_state = OFFLINE;
+int elevator_dest = 1;
+int current_floor = 1;
+int elevator_weight = 0;
+int elevator_count = 0;
+int passengers_serviced = 0;
+char * message;
+
+static struct proc_ops fops;
+
+int start_elevator(void)
+{
+    // Check if the elevator is already active
+    if (elevator_state != OFFLINE)
+    {
+        return 1;
+    }
+
+    // Initialize the elevator's state and other parameters
+    elevator_state = IDLE;
+    current_floor = 1;
+    elevator_weight = 0;
+    passengers_serviced = 0;
+
+    // Check if memory allocation fails
+    message = kmalloc(sizeof(char) * ENTRY_SIZE, GFP_KERNEL);
+    if (message == NULL)
+    {
+        printk(KERN_WARNING "start_elevator: Failed to allocate memory\n");
+        return -ENOMEM;
+    }
+
+    // Start the elevator thread
+    elevator_thread = kthread_run(elevator_thread_function, &elevator, "elevator_thread");
+    if (elevator_thread == NULL)
+    {
+        printk(KERN_WARNING "start_elevator: Failed to create elevator_thread\n");
+        kfree(message); // Clean up allocated memory
+        return -ERRORNUM;
+    }
+
+    return 0; // Return 0 for a successful start
+}
 
 int issue_request(int start_floor, int destination_floor, int type)
 {
@@ -44,7 +92,20 @@ int issue_request(int start_floor, int destination_floor, int type)
     return 0; // Return 0 for a valid request
 }
 
-// Function to load passengers onto the elevator
+int stop_elevator(void)
+{
+    kthread_stop(elevator_thread);
+    // Lock the elevator_mutex to ensure exclusive access
+    mutex_lock(&elevator_mutex);
+    if (elevator_state == OFFLINE)
+    { // If the elevator is empty and all passengers have been serviced
+        mutex_unlock(&elevator_mutex);
+        return 0; // Return 0 for successful deactivation
+    }
+    mutex_unlock(&elevator_mutex); // Unlock the elevator_mutex
+    return 1;                      // Return 1 if the elevator is not empty and deactivation is in progress
+}
+
 void load_passengers(int current_floor)
 {
     // mutex_lock(&elevator_mutex);
@@ -85,6 +146,7 @@ void unload_passengers(void)
     // mutex_unlock(&elevator_mutex);
 }
 
+=
 void searchNextEmpty(void)
 {
     // mutex_lock(&elevator_mutex);
@@ -101,16 +163,17 @@ void searchNextEmpty(void)
     }
     if (empty == true)
     {
-        elevator_state = IDLE; // state for IDLE
-        // mutex_unlock(&elevator_mutex);
+        elevator_state = IDLE; 
         return;
     }
+
     if (!emptyFloor[current_floor - 1])
     {
         elevator_state = LOADING;
         // mutex_unlock(&elevator_mutex);
         return;
     }
+
     for (int i = 1; i < 6; i++)
     {
         int add, sub;
@@ -131,10 +194,10 @@ void searchNextEmpty(void)
             return;
         }
     }
+
 }
 
-// Elevator thread function
-static int elevator_thread_function(void *data)
+int elevator_thread_function(void *data)
 {
     while (!kthread_should_stop())
     {
@@ -208,6 +271,8 @@ static int elevator_thread_function(void *data)
         mutex_unlock(&elevator_mutex);
     }
 
+    complete(&elevator_completion);
+
     return exit_elevator();
 }
 
@@ -252,54 +317,6 @@ int exit_elevator(void)
     return 1;
 }
 
-int start_elevator(void)
-{
-    // Check if the elevator is already active
-    if (elevator_state != OFFLINE)
-    {
-        return 1;
-    }
-
-    // Initialize the elevator's state and other parameters
-    elevator_state = IDLE;
-    current_floor = 1;
-    elevator_weight = 0;
-    passengers_serviced = 0;
-
-    // Check if memory allocation fails
-    message = kmalloc(sizeof(char) * ENTRY_SIZE, GFP_KERNEL);
-    if (message == NULL)
-    {
-        printk(KERN_WARNING "start_elevator: Failed to allocate memory\n");
-        return -ENOMEM;
-    }
-
-    // Start the elevator thread
-    elevator_thread = kthread_run(elevator_thread_function, &elevator, "elevator_thread");
-    if (elevator_thread == NULL)
-    {
-        printk(KERN_WARNING "start_elevator: Failed to create elevator_thread\n");
-        kfree(message); // Clean up allocated memory
-        return -ERRORNUM;
-    }
-
-    return 0; // Return 0 for a successful start
-}
-
-int stop_elevator(void)
-{
-    kthread_stop(elevator_thread);
-    // Lock the elevator_mutex to ensure exclusive access
-    mutex_lock(&elevator_mutex);
-    if (elevator_state == OFFLINE)
-    { // If the elevator is empty and all passengers have been serviced
-        mutex_unlock(&elevator_mutex);
-        return 0; // Return 0 for successful deactivation
-    }
-    mutex_unlock(&elevator_mutex); // Unlock the elevator_mutex
-    return 1;                      // Return 1 if the elevator is not empty and deactivation is in progress
-}
-
 int FloorCountTotal(void)
 {
     int total_count = 0;
@@ -312,3 +329,117 @@ int FloorCountTotal(void)
 
     return total_count;
 }
+
+int __init elevator_init(void)
+{
+    printk(KERN_INFO "Elevator module is being loaded\n");
+
+    init_completion(&elevator_completion);
+    
+    fops.proc_open = elevator_proc_open;
+    fops.proc_read = elevator_proc_read;
+    fops.proc_release = elevator_proc_release;
+
+    if (!proc_create(ENTRY_NAME, PERMS, NULL, &fops))
+    {
+        printk(KERN_WARNING "elevator_init\n");
+        remove_proc_entry(ENTRY_NAME, NULL);
+        return -ENOMEM;
+    }
+
+    // Initialize elevator state, lists, mutex, and start elevator thread
+    STUB_start_elevator = start_elevator;
+    STUB_issue_request = issue_request;
+    STUB_stop_elevator = stop_elevator;
+
+    elevator_state = OFFLINE; // Initialize elevator state to OFFLINE
+
+    elevator.total_cnt = 0;
+    elevator.total_weight = 0;
+
+    INIT_LIST_HEAD(&elevator.list);
+
+    mutex_init(&elevator_mutex);
+
+    for (int i = 0; i < 6; i++)
+    {
+        INIT_LIST_HEAD(&floor_lists[i]);
+    }
+
+    message = kmalloc(ENTRY_SIZE, GFP_KERNEL);
+
+    if (!message) {
+        printk(KERN_WARNING "elevator_init: Failed to allocate memory for message\n");
+        // Perform necessary cleanup before returning
+        remove_proc_entry(ENTRY_NAME, NULL);
+        // Cleanup other allocated resources, if any
+        return -ENOMEM;
+    }
+
+    printk(KERN_INFO "Elevator module initialization completed\n");
+
+    return 0;
+}
+
+void __exit elevator_exit(void)
+{
+    if (elevator_state != OFFLINE) {
+        // If the elevator is active, stop it and perform necessary cleanup
+        STUB_stop_elevator();
+        // Wait for the elevator thread to finish
+        wait_for_completion(&elevator_completion);
+    }
+
+    STUB_start_elevator = NULL;
+    STUB_issue_request = NULL;
+    STUB_stop_elevator = NULL;
+
+    remove_proc_entry(ENTRY_NAME, NULL);
+
+    // Stop the elevator thread if it's running
+    if (elevator_thread)
+    {
+        kthread_stop(elevator_thread);
+        elevator_thread = NULL;
+        elevator_state = OFFLINE; 
+    }
+
+    // Free any allocated memory
+    if (message)
+    {
+        kfree(message);
+        message = NULL;
+    }
+
+    // Free any remaining passengers
+    struct list_head *temp, *pos;
+    Passenger *p;
+
+    mutex_lock(&elevator_mutex);
+    list_for_each_safe(pos, temp, &elevator.list)
+    {
+        p = list_entry(pos, Passenger, list);
+        list_del(pos);
+        kfree(p);
+    }
+    mutex_unlock(&elevator_mutex);
+
+    // CLean up for passenger list
+    for (int i = 0; i < 6; i++)
+    {
+        mutex_lock(&elevator_mutex);
+        list_for_each_safe(pos, temp, &floor_lists[i])
+        {
+            p = list_entry(pos, Passenger, list);
+            list_del(pos);
+            kfree(p);
+        }
+        mutex_unlock(&elevator_mutex);
+    }
+
+
+    printk(KERN_INFO "Elevator module successfully unloaded\n");
+}
+
+module_init(elevator_init);
+module_exit(elevator_exit);

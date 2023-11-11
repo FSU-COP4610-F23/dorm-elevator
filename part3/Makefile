@@ -1,6 +1,6 @@
 obj-m += elevator.o
 
-elevator-objs := src/elevator.o
+elevator-objs := src/elevator.o src/proc_file.o
 
 KDIR := /lib/modules/$(shell uname -r)/build
 PWD := $(shell pwd)

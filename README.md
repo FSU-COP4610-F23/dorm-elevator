@@ -317,4 +317,4 @@ This will run the program ...
 
 ## Considerations
 - We did our best to catch and fix elevator issues we noticed with the extra time from the super helpful extension. Jasmine also carried where she could when it was challenging to get help from lovely TAs due to people swarming/being busy, so not every one of our questions was answered. We also had other projects due for other classes, and between the three of us, we had six midterms from when the project was assigned till when it was expected. So please have mercy. 🙏
-</>
+</div>

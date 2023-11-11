@@ -42,32 +42,135 @@ part1.trace]
 - **Assigned to**: Jasmine Masopeh
 
 ### Part 2: Timer Kernel Module
-- **Responsibilities**: [Description]
+- **Responsibilities**: [In Unix-like operating systems, the time is often represented as the number of seconds since the Unix Epoch (January 1st, 1970). The task requires creating a kernel module named "my_timer" that utilizes the function ktime_get_real_ts64() to retrieve the time value, which includes seconds and nanoseconds since the Epoch.
+
+Develop a kernel module called my_timer that calls the ktime_get_real_ts64() function to obtain the current time. This module should store the time value.
+When the my_timer module is loaded using insmod, it should create a proc entry named "/proc/timer".
+When the my_timer module is unloaded using rmmod, the /proc/timer entry should be removed.
+On each read operation of "/proc/timer", utilize the proc interface to print both the current time and the elapsed time since the last call (if valid).
+To insert a kernel module:
+
+$ sudo insmod my_timer.ko
+To remove a kernel module:
+
+$ sudo rmmod my_timer.ko
+To check for your kernel module:
+
+$ lsmod | grep my_timer
+Example Usage:
+
+$ cat /proc/timer
+current time: 1518647111.760933999
+
+$ sleep 1
+
+$ cat /proc/timer
+current time: 1518647112.768429998
+elapsed time: 1.007495999
+
+$ sleep 3
+
+$ cat /proc/timer
+current time: 1518647115.774925999
+elapsed time: 3.006496001
+
+$ sleep 5
+
+$ cat /proc/timer
+current time: 1518647120.780421999
+elapsed time: 5.005496000]
 - **Assigned to**: Jasmine Masopeh
 
 ### Part 3a: Adding System Calls
-- **Responsibilities**: [Description]
-- **Assigned to**: Alex Brown
+- **Responsibilities**: [Download the latest stable linux-kernel-6.5.x and follow the provided slides in compiling your kernel. You can download from the following link:
+
+Download Kernel
+You should move the kernel to your /usr/src/ directory and create a soft link to it as so:
+
+$ sudo ln -s /usr/src/[kernel_version] ~/[kernel_version]
+$ cd ~/[kernel_version]
+This will make it easier to modify from elsewhere instead of having to edit it in a restricted area.
+
+Modify the kernel by adding three system calls to control the elevator and create passengers. Assign the following numbers to the system calls:
+
+548 for start_elevator()
+549 for issue_request()
+550 for stop_elevator()
+The respective function prototypes are as followed:
+
+int start_elevator(void)
+
+The start_elevator() system call activates the elevator for service. From this point forward, the elevator exists and will begin to service requests. It returns 1 if the elevator is already active, 0 for a successful start, and -ERRORNUM if initialization fails or -ENOMEM if it couldn't allocate memory. The elevator is initialized with the following values:
+
+State: IDLE
+Current floor: 1
+Number of passengers: 0
+int issue_request(int start_floor, int destination_floor, int type)
+
+The issue_request() system call creates a request for a passenger, specifying the start floor, destination floor, and type of passenger (0 for freshmen, 1 for sophomore, 2 for junior, 3 for senior). It returns 1 if the request is invalid (e.g., out of range or invalid type) and 0 otherwise.
+
+int stop_elevator(void)
+
+The stop_elevator() system call deactivates the elevator. It stops processing new requests (passengers waiting on floors), but it must offload all current passengers before complete deactivation. Only when the elevator is empty can it be deactivated (state = OFFLINE). The system call returns 1 if the elevator is already in the process of deactivating and 0 otherwise.
+
+You will need to make these files to add the system calls:
+
+[kernel_version]/syscalls/syscalls.c
+[kernel_version]/syscalls/Makefile
+You will need to modify the following files to add te system calls:
+
+[kernel_version]/arch/x86/syscalls/syscall_64.tbl
+[kernel_version]/include/linux/syscalls.h
+[kernel_version]/Makefile]
+- **Assigned to**: Jasmine Masopeh, Juancarlos Alguera, Angela Fields
 
 ### Part 3b: Kernel Compilation
-- **Responsibilities**: [Description]
-- **Assigned to**: Alex Brown, Jane Smith
+- **Responsibilities**: [You will need to disable certain certificates when adding system calls, follow the slides.
+
+Compile the kernel with the new system calls. The kernel should be compiled with the following options:
+
+$ make menuconfig
+$ make -j$(nproc)
+$ sudo make modules_install
+$ sudo make install
+$ sudo reboot
+Check that you installed your kernel by typing this into the terminal:
+
+$ uname -r
+Note: This is a long process! Make sure to do this part early!]
+- **Assigned to**: Jasmine Masopeh, Juancarlos Alguera, Angela Fields
 
 ### Part 3c: Threads
-- **Responsibilities**: [Description]
-- **Assigned to**: Alex Brown, Jane Smith
+- **Responsibilities**: [Implement the elevator kernel module. The module should be named "elevator" and should be loaded using insmod. The module should be unloaded using rmmod.
+
+Recall that these are the details: Use a kthread to control the elevator movement.]
+- **Assigned to**: Angela Fields, Jasmine Masopeh
 
 ### Part 3d: Linked List
-- **Responsibilities**: [Description]
-- **Assigned to**: Jane Smith
+- **Responsibilities**: [Implement the elevator kernel module. The module should be named "elevator" and should be loaded using insmod. The module should be unloaded using rmmod.
+
+Recall that these are the details: Use linked lists to handle the number of passengers per floor/elevator.]
+- **Assigned to**: Juancarlos Alguera, Jasmine Masopeh
 
 ### Part 3e: Mutexes
-- **Responsibilities**: [Description]
-- **Assigned to**: John Doe
+- **Responsibilities**: [Implement the elevator kernel module. The module should be named "elevator" and should be loaded using insmod. The module should be unloaded using rmmod.
+
+Recall that these are the details: Use a mutex to control shared data access between floor and elevators.]
+- **Assigned to**: Jasmine Masopeh, Juancarlos Alguera, Angela Fields
 
 ### Part 3f: Scheduling Algorithm
-- **Responsibilities**: [Description]
-- **Assigned to**: Alex Brown, John Doe
+- **Responsibilities**: [Interact with two provided user-space applications that enable communication with the kernel module:
+
+producer.c: creates passengers and issues requests to the elevator
+$ ./producer [number_of_passengers]
+consumer.c: calls the start_elevator() or the stop_elevator() system call.
+If the flag is --start, the program starts the elevator.
+If the flag is --stop, the program stops the elevator.
+You can use the following command to see your elevator in action:
+
+$ watch -n [snds] cat [proc_file]
+The producer.c and consumer.c programs will be provided to you.]
+- **Assigned to**: Jasmine Masopeh, Juancarlos Alguera, Angela Fields
 
 ## File Listing
 ```
@@ -142,11 +245,10 @@ This will run the program ...
 
 
 ## Bugs
-- **Bug 1**: This is bug 1.
-- **Bug 2**: This is bug 2.
-- **Bug 3**: This is bug 3.
+- Hopefully none :D
 
 ## Considerations
+- We did our best catching and fixing elevator issues we noticed with the extra time from the super helpful extension. Jasmine also carried where she could when it was challenging to get help from lovely TAs due to people swarm/being busy; so not every one of our questions was answered.
 [Description]
 # project-2-group-5
 # project-2-group-5

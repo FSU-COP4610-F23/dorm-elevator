@@ -1,10 +1,22 @@
-obj-m += kernel_module/elevator.o
+obj-m += elevator.o
+
+elevator-objs := src/elevator.o
+
+KDIR := /lib/modules/$(shell uname -r)/build
+PWD := $(shell pwd)
 
 all:
-	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
+	$(MAKE) -C $(KDIR) M=$(PWD) modules
 
 clean:
-	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) clean
+	$(MAKE) -C $(KDIR) M=$(PWD) clean
 
+load: 
+	sudo insmod elevator.ko
 
+unload:
+	sudo rmmod elevator
+
+watch: 
+	watch -n1 cat /proc/elevator
 

@@ -45,16 +45,6 @@ MODULE_DESCRIPTION("Elevator Kernel Module");
 extern struct Elevator elevator;
 extern struct list_head floor_lists[6];
 extern struct task_struct *elevator_thread;
-// extern char floor_count[6]; // Initialize as needed
-// extern int elevator_state = OFFLINE;
-// extern int elevator_dest = 1;
-// extern int current_floor = 1;
-// extern int elevator_weight = 0;
-// extern int elevator_count = 0;
-// extern int passengers_serviced = 0;
-// extern int read_p;
-// extern char *message;
-
 extern char floor_count[6];
 extern int elevator_state;
 extern int elevator_dest;
@@ -103,27 +93,5 @@ int elevator_thread_function(void *data);
 
 static DECLARE_COMPLETION(elevator_completion);
 static DEFINE_MUTEX(elevator_mutex);
-
-
-// Add declarations for missing functions
-// extern void printFloorList(int floor);
-// int delete_passengers(int type);
-// static int elevator_thread_function(void *data);
-
-
-//proc file
-// int elevator_proc_open(struct inode *sp_inode, struct file *sp_file); 
-// static ssize_t elevator_proc_read(struct file *file, char __user *ubuf, size_t count, loff_t *ppos); 
-// int elevator_proc_release(struct inode *sp_inode, struct file *sp_file); 
-
-
-// Declare variables for floor_count, num_passengers, and passengers_serviced
-
-
-
-// // Define mutex for shared data access
-// static struct mutex elevator_mutex;
-
-// // Define the elevator thread and its function
 
 #endif 

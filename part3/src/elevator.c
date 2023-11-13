@@ -146,7 +146,6 @@ void unload_passengers(void)
     // mutex_unlock(&elevator_mutex);
 }
 
-=
 void searchNextEmpty(void)
 {
     // mutex_lock(&elevator_mutex);

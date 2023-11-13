@@ -92,6 +92,7 @@ int issue_request(int start_floor, int destination_floor, int type)
     return 0; // Return 0 for a valid request
 }
 
+/*
 int stop_elevator(void)
 {
     kthread_stop(elevator_thread);
@@ -104,6 +105,42 @@ int stop_elevator(void)
     }
     mutex_unlock(&elevator_mutex); // Unlock the elevator_mutex
     return 1;                      // Return 1 if the elevator is not empty and deactivation is in progress
+}
+*/
+
+int stop_elevator(void)
+{
+    mutex_lock(&elevator_mutex);
+
+    if (elevator_state == OFFLINE)
+    {
+        mutex_unlock(&elevator_mutex);
+        return 1; // Already offline
+    }
+
+    elevator_state = LOADING;
+    mutex_unlock(&elevator_mutex);
+
+    unload_passengers();
+
+    while (1) {
+        mutex_lock(&elevator_mutex);
+        if (elevator_count == 0) {
+            elevator_state = OFFLINE;
+            mutex_unlock(&elevator_mutex);
+            break; // Exit the loop when the elevator is empty
+        }
+        mutex_unlock(&elevator_mutex);
+        msleep(100); // Sleep for a short time (e.g., 100ms) before checking again
+    }
+
+    if (elevator_thread) {
+        kthread_stop(elevator_thread);
+        elevator_thread = NULL;
+    }
+
+    printk(KERN_INFO "Elevator module is now offline.\n");
+    return 0; // Successfully transitioned to offline
 }
 
 void load_passengers(int current_floor)
@@ -369,9 +406,7 @@ int __init elevator_init(void)
 
     if (!message) {
         printk(KERN_WARNING "elevator_init: Failed to allocate memory for message\n");
-        // Perform necessary cleanup before returning
         remove_proc_entry(ENTRY_NAME, NULL);
-        // Cleanup other allocated resources, if any
         return -ENOMEM;
     }
 
@@ -400,8 +435,9 @@ void __exit elevator_exit(void)
     {
         kthread_stop(elevator_thread);
         elevator_thread = NULL;
-        elevator_state = OFFLINE; 
     }
+
+    elevator_state = OFFLINE; 
 
     // Free any allocated memory
     if (message)

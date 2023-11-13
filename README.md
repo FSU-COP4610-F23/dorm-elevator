@@ -312,7 +312,7 @@ This will run the program ...
 
 
 ## Bugs
-- **Bug 1**: The elevator might miss some passengers but don't worry, it always goes back to them.
+- We did not find any eye-catching bugs we might have. However, I'm pretty sure we have a few.
 
 
 ## Considerations

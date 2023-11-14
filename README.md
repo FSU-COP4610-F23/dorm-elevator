@@ -16,8 +16,8 @@ By completing this project, you acquire practical experience in system calls, ke
 
 ## Group Members
 - **Jasmine Masopeh**: jdm21e@fsu.edu
-- **Angela Fields**: js19@fsu.edu
-- **JuanCarlos Alguera**: ab19@fsu.edu
+- **Angela Fields**: amf21l@fsu.edu
+- **JuanCarlos Alguera**: jpa22a@fsu.edu
 
 ## Division of Labor
 
@@ -181,7 +181,7 @@ For each floor of the building, the following should be printed:
 
 An indicator of whether or not the elevator is on the floor.
 The count of waiting passengers.
-For each waiting passenger, 2 characters indicating the passenger type and destination floor.
+For each waiting passenger, 2 characters indicate the passenger type and destination floor.
 ```
 Example Proc File:
 
@@ -234,9 +234,14 @@ elevator/
 │   └── Makefile
 ├── part2/
 │   ├── src/
+|   |  ├── my_timer.c
 │   └── Makefile
 ├── part3/
 │   ├── src/
+|   |  ├── elevator.h
+|   |  ├── elevator.c
+|   |  ├── proc_file.h
+|   |  ├── proc_file.c
 │   ├── tests/
 │   ├── Makefile
 │   └── sys_call.c
@@ -259,7 +264,7 @@ make
 ```
 This will build the executable in ...
 ### Execution
-We don't really excute this part. The most you can do is look into the empty.trace and part1.trace to find the differences and how the syscalls in part1 affected it.
+We don't really execute this part. The most you can do is look into the empty.trace and part1.trace to find the differences and how the syscalls in part1 affected it.
 
 ## Part 2
 
@@ -316,5 +321,5 @@ This will run the program ...
 
 
 ## Considerations
-- We did our best to catch and fix elevator issues we noticed with the extra time from the super helpful extension. Jasmine also carried where she could when it was challenging to get help from lovely TAs due to people swarming/being busy, so not every one of our questions was answered. We also had other projects due for other classes, and between the three of us, we had six midterms from when the project was assigned till when it was expected. So please have mercy. 🙏
+- We did our best to catch and fix elevator issues we noticed with the extra time from the super helpful extension. Jasmine also carried where she could when it was challenging to get help from lovely TAs due to people swarming/being busy, so not every one of our questions was answered. We also had other projects due for other classes, and between the three of us, we had ten tests from when the project was assigned till when it was expected. So please have mercy. 🙏
 </div>
